@@ -43,6 +43,8 @@ import { ExplorerFileIcon, IdeIcon } from './icons.tsx'
 import { useIdeI18n, type IdeLocale } from './i18n.tsx'
 import { decodeWorkspacePath } from './workspace-path.ts'
 
+const useClientLayoutEffect = typeof document === 'undefined' ? useEffect : useLayoutEffect
+
 export interface FileExplorerProps {
   workspace: WorkspaceSummary | undefined
   store: ExplorerStore
@@ -386,12 +388,12 @@ export function FileExplorer({
     setDropTargetPath(undefined)
   }, [snapshot.activeWorkspaceEpoch, workspaceId])
 
-  useLayoutEffect(() => () => {
+  useClientLayoutEffect(() => () => {
     focusRecoveryGeneration.current += 1
     if (focusRecoveryFrame.current !== undefined) window.cancelAnimationFrame(focusRecoveryFrame.current)
   }, [])
 
-  useLayoutEffect(() => {
+  useClientLayoutEffect(() => {
     // Removing a focused DOM node does not consistently dispatch `blur` in
     // every browser. Ref callbacks have settled before layout effects, so use
     // the last real focused row to recover synchronously when it disappeared.
@@ -475,11 +477,11 @@ export function FileExplorer({
     unresolvedWasOpen.current = unresolvedNamedOpen
   }, [session.focusedPath, session.selectedPath, unresolvedNamedOpen])
 
-  useLayoutEffect(() => {
+  useClientLayoutEffect(() => {
     setContextMenu(current => current === undefined ? current : undefined)
   }, [portalDismissRequest, workspaceId])
 
-  useLayoutEffect(() => {
+  useClientLayoutEffect(() => {
     setContextMenu(current => current === undefined
       || current.focusedPathAtOpen === session.focusedPath
         && current.selectedPathAtOpen === session.selectedPath

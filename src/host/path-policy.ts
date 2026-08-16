@@ -19,6 +19,59 @@ function samePath(left: string, right: string): boolean {
   return delta === ''
 }
 
+function windowsRegisteredPathParts(absolute: string): { root: string, segments: string[] } {
+  // `win32.parse()` treats only `\\?\UNC\` as the root of a namespaced UNC
+  // path. Include its server/share components explicitly so the walk starts
+  // at a real filesystem root while retaining the long-path namespace.
+  const namespacedUncPrefix = '\\\\?\\UNC\\'
+  if (absolute.slice(0, namespacedUncPrefix.length).toLowerCase() === namespacedUncPrefix.toLowerCase()) {
+    const [server, share, ...segments] = absolute
+      .slice(namespacedUncPrefix.length)
+      .split(win32.sep)
+      .filter(segment => segment !== '')
+    if (server === undefined || share === undefined) {
+      return { root: '', segments: [] }
+    }
+    return { root: `${namespacedUncPrefix}${server}\\${share}\\`, segments }
+  }
+
+  const root = win32.parse(absolute).root
+  return {
+    root,
+    segments: absolute.slice(root.length).split(win32.sep).filter(segment => segment !== ''),
+  }
+}
+
+async function assertWindowsRegisteredPathHasNoLinks(absolute: string): Promise<void> {
+  const { root, segments } = windowsRegisteredPathParts(absolute)
+  if (root === '') {
+    throw new IdeHostError('WORKSPACE_UNAVAILABLE', 'The workspace root identity has changed.', 409)
+  }
+
+  let cursor = root
+  const components = [cursor]
+  for (const segment of segments) {
+    cursor = win32.join(cursor, segment)
+    components.push(cursor)
+  }
+  for (const component of components) {
+    let info
+    try {
+      info = await lstat(component, { bigint: true })
+    } catch (error) {
+      throw new IdeHostError(
+        'WORKSPACE_UNAVAILABLE',
+        'The workspace directory is unavailable.',
+        409,
+        { cause: error },
+      )
+    }
+    if (info.isSymbolicLink() || !info.isDirectory()) {
+      throw new IdeHostError('WORKSPACE_UNAVAILABLE', 'The workspace root identity has changed.', 409)
+    }
+  }
+}
+
 export function isPathInside(root: string, candidate: string): boolean {
   const delta = relative(root, candidate)
   return delta === '' || (delta !== '..' && !delta.startsWith(`..${sep}`) && !isAbsolute(delta))
@@ -100,7 +153,15 @@ export async function resolveWorkspaceRoot(
   }
   const canonical = await realpath(absolute)
   if (!samePath(absolute, canonical)) {
-    throw new IdeHostError('WORKSPACE_UNAVAILABLE', 'The workspace root identity has changed.', 409)
+    if (process.platform !== 'win32') {
+      throw new IdeHostError('WORKSPACE_UNAVAILABLE', 'The workspace root identity has changed.', 409)
+    }
+    // Windows `realpath()` expands 8.3 components (for example RUNNER~1 on
+    // hosted CI) even when the registered path contains no reparse point. A
+    // component-by-component lstat walk distinguishes that benign spelling
+    // change from a symlink/junction alias without weakening the final
+    // dev/ino identity checks below.
+    await assertWindowsRegisteredPathHasNoLinks(absolute)
   }
   const canonicalInfo = await lstat(canonical, { bigint: true })
   if (!canonicalInfo.isDirectory() || canonicalInfo.isSymbolicLink()

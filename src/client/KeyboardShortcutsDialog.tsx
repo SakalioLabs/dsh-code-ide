@@ -15,6 +15,8 @@ import type {
 import type { WorkbenchCommandCatalogEntry } from './commands/types.ts'
 import css from './ide.module.css'
 
+const useClientLayoutEffect = typeof document === 'undefined' ? useEffect : useLayoutEffect
+
 type Controller = KeybindingController<unknown>
 export const MAX_KEYBOARD_SHORTCUT_QUERY_CODE_UNITS = 512
 
@@ -380,7 +382,7 @@ export function KeyboardShortcutsDialog(props: KeyboardShortcutsDialogProps) {
     }
   }, [activeRowId, visibleRows])
 
-  useLayoutEffect(() => {
+  useClientLayoutEffect(() => {
     if (!open) return
     const dialog = dialogRef.current
     if (dialog === null) return

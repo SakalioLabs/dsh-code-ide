@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, realpath, rm, symlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, toNamespacedPath } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -60,14 +60,29 @@ describe('workspace path policy', () => {
   it('accepts an extended-length spelling of a Windows workspace root', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-code-ide-root-'))
     roots.push(root)
+    const canonical = await realpath(root)
 
     if (process.platform !== 'win32') {
-      await expect(resolveWorkspaceRoot(root)).resolves.toMatchObject({ realPath: root })
+      await expect(resolveWorkspaceRoot(root)).resolves.toMatchObject({ realPath: canonical })
       return
     }
 
     const resolved = await resolveWorkspaceRoot(toNamespacedPath(root))
-    expect(resolved.realPath).toBe(root)
+    expect(resolved.realPath).toBe(canonical)
     expect(resolved.identity.ino).toBeGreaterThan(0n)
+  })
+
+  it.runIf(process.platform === 'win32')('rejects a workspace reached through an ancestor junction', async () => {
+    const container = await mkdtemp(join(tmpdir(), 'dsh-code-ide-root-junction-'))
+    roots.push(container)
+    const target = join(container, 'target')
+    const workspace = join(target, 'workspace')
+    const junction = join(container, 'junction')
+    await mkdir(workspace, { recursive: true })
+    await symlink(target, junction, 'junction')
+
+    await expect(resolveWorkspaceRoot(join(junction, 'workspace'))).rejects.toMatchObject({
+      code: 'WORKSPACE_UNAVAILABLE',
+    })
   })
 })

@@ -1,4 +1,4 @@
-import { chmod, lstat, mkdtemp, mkdir, readFile, rename, rm, symlink, writeFile } from 'node:fs/promises'
+import { chmod, lstat, mkdtemp, mkdir, readFile, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -35,7 +35,7 @@ describe('WorkspaceFileService', () => {
   }
 
   beforeEach(async () => {
-    workspaceRoot = await mkdtemp(join(tmpdir(), 'dsh-code-ide-files-'))
+    workspaceRoot = await realpath(await mkdtemp(join(tmpdir(), 'dsh-code-ide-files-')))
     files = createFiles()
   })
 
