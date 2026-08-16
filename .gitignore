@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.vite/
+.cache/
+*.tsbuildinfo
+*.log
+*.tgz
+*.orig
+*.rej
+tmp/
+.DS_Store

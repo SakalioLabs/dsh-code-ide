@@ -1,0 +1,9 @@
+# Reference only: dsh-code-ide ships this patch through its dsh.bundle manifest.
+# Installing the bundle with `dsh plugin --profile web add ...` applies it
+# automatically. Do not also copy this into a user patch.
+- insert:
+    - id: dsh-code-ide
+      name: dsh-code-ide
+      config:
+        maxFileBytes: 4194304
+        terminalShell: auto

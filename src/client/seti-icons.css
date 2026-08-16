@@ -1,0 +1,31 @@
+@font-face {
+  font-family: "Dsh Seti";
+  src: url("./assets/seti.woff") format("woff");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+[data-explorer-seti-icon] {
+  display: inline-flex;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  color: var(--seti-icon-dark);
+  font-family: "Dsh Seti";
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 16px;
+  text-rendering: geometricPrecision;
+}
+
+@media (forced-colors: active) {
+  [data-explorer-seti-icon] {
+    color: CanvasText !important;
+    forced-color-adjust: auto;
+  }
+}

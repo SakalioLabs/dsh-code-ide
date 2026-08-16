@@ -1,0 +1,132 @@
+{
+  "name": "dsh-code-ide",
+  "version": "0.1.0-alpha.0",
+  "description": "An optional web IDE workbench for DeepSeek Harness",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SakalioLabs/dsh-code-ide.git"
+  },
+  "homepage": "https://github.com/SakalioLabs/dsh-code-ide#readme",
+  "bugs": {
+    "url": "https://github.com/SakalioLabs/dsh-code-ide/issues"
+  },
+  "keywords": [
+    "deepseek",
+    "deepseek-harness",
+    "ide",
+    "web-ide",
+    "codemirror",
+    "xterm"
+  ],
+  "type": "module",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-locale"
+      ],
+      "platform": "web"
+    }
+  },
+  "main": "./dist/host/index.js",
+  "types": "./dist/host/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/host/index.d.ts",
+      "default": "./dist/host/index.js"
+    },
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./client": {
+      "default": "./dist/harness-client/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "docs",
+    "examples",
+    "cordis.patch.yml",
+    "README.md",
+    "README_zh-CN.md",
+    "README_en.md",
+    "README_ja.md",
+    "README_de.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "ThirdPartyNotices.txt"
+  ],
+  "scripts": {
+    "build": "pnpm run clean && pnpm run build:host && pnpm run build:client && pnpm run build:harness-client",
+    "build:host": "tsc -p tsconfig.host.json",
+    "build:client": "vite build",
+    "clean": "rimraf dist coverage .cache",
+    "build:harness-client": "vite build --config vite.harness-client.config.ts",
+    "dev": "vite",
+    "prepare": "pnpm run build",
+    "typecheck": "tsc -p tsconfig.host.json --noEmit && tsc -p tsconfig.client.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "dependencies": {
+    "@codemirror/commands": "^6.10.2",
+    "@codemirror/lang-cpp": "^6.0.3",
+    "@codemirror/lang-css": "^6.3.1",
+    "@codemirror/lang-go": "^6.0.1",
+    "@codemirror/lang-html": "^6.4.12",
+    "@codemirror/lang-java": "^6.0.2",
+    "@codemirror/lang-javascript": "^6.2.5",
+    "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/lang-markdown": "^6.5.2",
+    "@codemirror/lang-python": "^6.2.1",
+    "@codemirror/lang-rust": "^6.0.2",
+    "@codemirror/lang-sql": "^6.10.0",
+    "@codemirror/lang-xml": "^6.1.0",
+    "@codemirror/lang-yaml": "^6.1.3",
+    "@codemirror/language": "^6.11.3",
+    "@codemirror/legacy-modes": "^6.5.3",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/view": "^6.39.10",
+    "@lezer/highlight": "^1.2.3",
+    "@vscode/ripgrep": "1.18.0",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/addon-search": "^0.16.0",
+    "@xterm/xterm": "^6.0.0",
+    "codemirror": "^6.0.2",
+    "ffi-rs": "1.3.7",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "ws": "^8.21.3"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=4.0.1-rc.1 <5",
+    "node-pty": "1.1.0"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.1",
+    "@types/node": "^22.18.12",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
+    "@types/ws": "^8.18.1",
+    "@vitejs/plugin-react": "^6.0.5",
+    "node-pty": "1.1.0",
+    "rimraf": "^6.1.2",
+    "typescript": "6.0.3",
+    "vite": "^8.2.1",
+    "vitest": "^4.1.10"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "node-pty"
+    ]
+  },
+  "packageManager": "pnpm@10.17.0"
+}

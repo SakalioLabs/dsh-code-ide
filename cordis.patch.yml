@@ -1,0 +1,6 @@
+- insert:
+    - id: dsh-code-ide
+      name: dsh-code-ide
+      config:
+        maxFileBytes: 4194304
+        terminalShell: auto
