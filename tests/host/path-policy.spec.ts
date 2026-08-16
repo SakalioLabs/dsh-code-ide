@@ -1,7 +1,16 @@
-import { describe, expect, it } from 'vitest'
-import { isPathInside, parseWorkspacePath } from '../../src/host/path-policy.js'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join, toNamespacedPath } from 'node:path'
+import { afterEach, describe, expect, it } from 'vitest'
+import { isPathInside, parseWorkspacePath, resolveWorkspaceRoot } from '../../src/host/path-policy.js'
 
 describe('workspace path policy', () => {
+  const roots: string[] = []
+
+  afterEach(async () => {
+    await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true })))
+  })
+
   it('accepts canonical relative paths', () => {
     expect(parseWorkspacePath('', { allowRoot: true })).toBe('')
     expect(parseWorkspacePath('src/main.ts', { allowRoot: false })).toBe('src/main.ts')
@@ -46,5 +55,19 @@ describe('workspace path policy', () => {
     const sibling = process.platform === 'win32' ? 'C:\\work-other\\a.ts' : '/work-other/a.ts'
     expect(isPathInside(root, child)).toBe(true)
     expect(isPathInside(root, sibling)).toBe(false)
+  })
+
+  it('accepts an extended-length spelling of a Windows workspace root', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-code-ide-root-'))
+    roots.push(root)
+
+    if (process.platform !== 'win32') {
+      await expect(resolveWorkspaceRoot(root)).resolves.toMatchObject({ realPath: root })
+      return
+    }
+
+    const resolved = await resolveWorkspaceRoot(toNamespacedPath(root))
+    expect(resolved.realPath).toBe(root)
+    expect(resolved.identity.ino).toBeGreaterThan(0n)
   })
 })

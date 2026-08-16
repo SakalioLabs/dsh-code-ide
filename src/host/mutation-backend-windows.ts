@@ -1824,8 +1824,13 @@ class WindowsMutationBackend implements MutationBackend {
         || (information.attributes & C.FILE_ATTRIBUTE_DIRECTORY) === 0) {
         throw new IdeHostError('WORKSPACE_UNAVAILABLE', 'The workspace root is not a real directory.', 409)
       }
-      if (information.volume !== request.expectedRootIdentity.dev
-        || information.index !== request.expectedRootIdentity.ino) {
+      // Node reports `dev = 0` for local Windows files on supported releases.
+      // The held root handle supplies the native volume fence; use the same
+      // comparison rule as normal mutation snapshots for the caller's
+      // Node-derived identity.
+      if (information.index !== request.expectedRootIdentity.ino
+        || (request.expectedRootIdentity.dev !== 0n
+          && information.volume !== request.expectedRootIdentity.dev)) {
         throw new IdeHostError('WORKSPACE_IDENTITY_CHANGED', 'The workspace root identity has changed.', 409)
       }
       if (request.signal.aborted || this.disposed) {

@@ -1,5 +1,5 @@
 import { lstat, readFile, realpath } from 'node:fs/promises'
-import { isAbsolute, join, relative, resolve, sep, win32 } from 'node:path'
+import { isAbsolute, join, relative, resolve, sep, toNamespacedPath, win32 } from 'node:path'
 import { MUTATION_BUDGETS } from '../shared/workspace-mutations.js'
 import { IdeHostError } from './errors.js'
 
@@ -9,7 +9,13 @@ const WINDOWS_RESERVED_NAME = /^(?:con|prn|aux|nul|com[1-9\u00b9\u00b2\u00b3]|lp
 const INTERNAL_NAME_PREFIX = '.__dsh_code_ide_'
 
 function samePath(left: string, right: string): boolean {
-  const delta = relative(left, right)
+  // `realpath()` may switch between DOS and extended-length (`\\?\\`)
+  // spellings on Windows. Compare both inputs in the same namespace without
+  // accepting an actual reparse-point/junction alias; root lstat checks below
+  // still verify the directory identity.
+  const comparableLeft = process.platform === 'win32' ? toNamespacedPath(left) : left
+  const comparableRight = process.platform === 'win32' ? toNamespacedPath(right) : right
+  const delta = relative(comparableLeft, comparableRight)
   return delta === ''
 }
 
