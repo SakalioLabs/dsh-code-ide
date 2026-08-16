@@ -9,7 +9,7 @@
 
 > For the guarded, Chinese-first assisted-installation prompt, see [Quick install](README.md#快速安装推荐). The manual steps below remain the supported fallback.
 
-> **Experimental shortcut for the exact source baseline only:** `pnpm dsh plugin --profile web add github:SakalioLabs/dsh-code-ide#a6de795978ba54562cb6a13b300c9fc39d0bc017`. A Git source install may require a narrowly approved package build; it is not a replacement for the manual path below.
+> **Quick shortcut:** `dsh plugin --profile web add github:SakalioLabs/dsh-code-ide`. In a Harness source checkout, use `pnpm dsh` instead. A Git source install may require a narrowly approved package build.
 
 ## What it is
 

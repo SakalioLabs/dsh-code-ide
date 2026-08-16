@@ -9,7 +9,7 @@
 
 > Den abgesicherten, chinesischsprachigen Assistenten-Prompt für die Installation findest du unter [Schnellinstallation](README.md#快速安装推荐). Die folgenden Schritte bleiben der nachvollziehbare manuelle Rückweg.
 
-> **Experimenteller Kurzweg nur für die exakte Quellbasis:** `pnpm dsh plugin --profile web add github:SakalioLabs/dsh-code-ide#a6de795978ba54562cb6a13b300c9fc39d0bc017`. Bei einer Git-Quellinstallation kann eine eng begrenzte Freigabe des Paket-Builds nötig sein; sie ersetzt nicht den unten beschriebenen manuellen Weg.
+> **Schneller Kurzweg:** `dsh plugin --profile web add github:SakalioLabs/dsh-code-ide`. In einem Harness-Quell-Checkout verwende stattdessen `pnpm dsh`. Bei einer Git-Quellinstallation kann eine eng begrenzte Freigabe des Paket-Builds nötig sein.
 
 ## Was ist das?
 

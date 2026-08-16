@@ -5,52 +5,30 @@
 `dsh-code-ide` 以可选插件的方式，为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 增加一个浏览器 IDE 工作台。它不会替换 Harness 首页、对话、会话、设置或工具界面。
 
 > [!IMPORTANT]
-> 当前版本为 `0.1.0-alpha.0`，尚未发布 GitHub Release，也没有可直接从 npm 安装的正式包。当前唯一验证基线是 DeepSeek Harness 提交 `47f943859bef60e4160492346772ded9b24f765a`（manifest `0.1.0-rc.5`）。
+> 当前版本为 `0.1.0-alpha.0`，尚未发布 GitHub Release，也没有可直接从 npm 安装的正式包。快速安装会跟随本仓库的 `main`；需要固定版本或遇到兼容问题时，请使用下方的手动安装说明。
 
 ## 快速安装（推荐）
 
-### 交给 Harness 协助安装
-
-在 Harness 的**标准模式**中（具有 `pwsh`/`bash`、Git、Node、pnpm 和文件写入工具），可将以下整段提示词直接发给 Harness。这是推荐入口：它会先做真正的只读预检，等待你的明确确认后才会安装；它不会自行升级 Harness、改全局包、重启服务或降低安全策略。
-
-~~~text
-请以“先检查、后确认”的方式协助我安装 dsh-code-ide；现在不要执行任何安装、写入、重启或权限升级。
-
-第一阶段只做只读检查：
-1. 找到当前使用的 Harness checkout、当前 DSH_HOME、可用 launcher（全局 dsh 或 checkout 内的 pnpm dsh），并显示 Node、pnpm、Git 与 Harness 版本；不要设置或替换 DSH_HOME。
-2. 仅当能确认 Harness 源码提交精确为 47f943859bef60e4160492346772ded9b24f765a（0.1.0-rc.5）时继续；无法确认、版本不匹配、没有网络/写权限或当前是只读/计划模式时，停止并说明最小人工解决步骤。不要升级、降级、重装 Harness，也不要修改全局 npm/pnpm 配置。
-3. 只读取现有 DSH_HOME/profile 文件来判断 web profile 是否已安装 dsh-code-ide；不要在这个阶段运行 `dsh plugin`、`plugin list` 或 `--dump-config`，因为缺失 profile 时这些命令可能创建文件。已安装、无法可靠判断或 profile 不存在时，都停止并报告现状，不要重复添加、更新或初始化 profile。
-4. 说明确认后可能创建或更新当前 DSH_HOME 下 web profile 的 package.json、锁文件、node_modules、cordis/bundle 配置；pnpm 还可能更新其受管理缓存。Git 安装会运行本项目的 prepare/build 脚本。说明后停止，列出将执行的安装与验证命令，等待我明确回复“确认安装”。
-
-只有在我回复“确认安装”后，才使用已经确认的 launcher 和当前 DSH_HOME 执行：
-<launcher> plugin --profile web add github:SakalioLabs/dsh-code-ide#a6de795978ba54562cb6a13b300c9fc39d0bc017
-
-若 shell 沙箱或系统要求权限，请展示确切原因并只请求这一次最小权限。若 pnpm 因 Git 依赖的构建审批而停止，请展示精确的包 key 和拟写入 profiles/web/pnpm-workspace.yaml 的最小 allowBuilds 改动，等待我再次明确确认；不要禁用 strictDepBuilds、ignore-scripts 或添加宽泛/全局许可。
-
-成功后只运行只读验证：
-<launcher> plugin --profile web list --depth 0
-<launcher> --profile web --dump-config
-确认官方 Web 条目仍在且 dsh-code-ide 只出现一次。不要自行启动、停止或重启 dsh web；最后告诉我是否需要重启以及准确命令。
-
-禁止修改或删除我的工作区、会话、用户文件、已有插件、Harness 源码、DSH_HOME、全局包、安全策略、防火墙或代理；任何一步失败或结果不明确时立即停止并报告。
-~~~
-
-这个提示词不会绕过 Harness 自身的审批：没有终端/写入权限、没有用户确认或环境不匹配时，应当安全停止。
-
-### 快捷试用（实验性）
-
-已经确认自己正在使用本 README 所列的 Harness 源码 checkout 时，可以直接安装固定 GitHub 提交：
+已安装 `dsh` 的用户只需运行：
 
 ~~~sh
-# 在 deepseek-harness@47f9438 的 checkout 中，使用当前 DSH_HOME
-pnpm dsh plugin --profile web add github:SakalioLabs/dsh-code-ide#a6de795978ba54562cb6a13b300c9fc39d0bc017
-pnpm dsh plugin --profile web list --depth 0
+dsh plugin --profile web add github:SakalioLabs/dsh-code-ide
 ~~~
 
-这是 Git **源码**安装：pnpm 会执行本项目的 `prepare` 构建脚本。首次执行如果 pnpm 要求批准构建，请先审阅本仓库和 pnpm 输出的**精确包名**，只为该包添加最小 `allowBuilds` 许可后重试；不要关闭脚本安全策略、不要添加宽泛许可。此路径尚未完成独立干净环境的端到端验证，因此不是稳定发布替代方案。
+如果你从 Harness 源码 checkout 运行，则在该目录中把上面的 `dsh` 替换为 `pnpm dsh`。安装会直接跟随 `main`；不需要 clone 本插件、不需要手工复制 patch。
+
+pnpm 若提示批准构建，只批准它显示的**精确包名**后重试；不要关闭脚本安全策略或添加宽泛许可。
+
+### 交给 Harness 安装
+
+把下面一句直接发给 Harness 即可：
+
+~~~text
+请将 github:SakalioLabs/dsh-code-ide 安装到当前 DeepSeek Harness 的 Web profile；不要升级 Harness 或修改全局配置，如需 pnpm 构建审批请先提示我确认。
+~~~
 
 > [!CAUTION]
-> 不要把当前 npm 上的任意 Harness 版本、教程中的裸 `dsh plugin add …`，或其他 profile 当作已验证替代。若你不能确认基线，请使用上方的引导式安装或下方的手动安装。
+> 上面是 alpha 的快速体验路径。需要可复现版本、离线安装或排障时，再使用下方的手动安装；可在 GitHub spec 后加 `#<commit>` 固定版本。
 
 ## 它如何融入 Harness
 
