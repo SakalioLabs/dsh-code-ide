@@ -9,7 +9,7 @@
 
 > 安全確認付きの中国語インストール支援プロンプトは、[クイックインストール](README.md#快速安装推荐) を参照してください。以下の手順は検証可能な手動フォールバックです。
 
-> **クイックショートカット:** `dsh plugin --profile web add github:SakalioLabs/dsh-code-ide`。Harness のソース checkout では代わりに `pnpm dsh` を使います。Git ソースのインストールでは、対象パッケージの構築を限定的に承認する必要がある場合があります。
+> **クイックショートカット:** `dsh plugin --profile web add github:SakalioLabs/dsh-code-ide`。Harness のソース checkout では代わりに `pnpm dsh` を使います。pnpm が `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED` を出した場合は、表示された正確な key を `$DSH_HOME/profiles/web/pnpm-workspace.yaml` の既存 `allowBuilds` に統合してから再実行してください。
 
 ## 概要
 

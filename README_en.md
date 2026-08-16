@@ -9,7 +9,7 @@
 
 > For the guarded, Chinese-first assisted-installation prompt, see [Quick install](README.md#快速安装推荐). The manual steps below remain the supported fallback.
 
-> **Quick shortcut:** `dsh plugin --profile web add github:SakalioLabs/dsh-code-ide`. In a Harness source checkout, use `pnpm dsh` instead. A Git source install may require a narrowly approved package build.
+> **Quick shortcut:** `dsh plugin --profile web add github:SakalioLabs/dsh-code-ide`. In a Harness source checkout, use `pnpm dsh` instead. If pnpm reports `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`, merge the exact printed key into the existing `allowBuilds` map in `$DSH_HOME/profiles/web/pnpm-workspace.yaml`, then rerun the command.
 
 ## What it is
 

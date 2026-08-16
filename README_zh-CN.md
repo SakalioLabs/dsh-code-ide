@@ -17,7 +17,14 @@ dsh plugin --profile web add github:SakalioLabs/dsh-code-ide
 
 如果你从 Harness 源码 checkout 运行，则在该目录中把上面的 `dsh` 替换为 `pnpm dsh`。安装会直接跟随 `main`；不需要 clone 本插件、不需要手工复制 patch。
 
-pnpm 若提示批准构建，只批准它显示的**精确包名**后重试；不要关闭脚本安全策略或添加宽泛许可。
+若看到 `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`，打开 `$DSH_HOME/profiles/web/pnpm-workspace.yaml`（默认通常是 `~/.dsh/profiles/web/pnpm-workspace.yaml`），在已有 `allowBuilds:` 下合并 pnpm **本次输出的精确 key**，然后重跑同一条命令：
+
+~~~yaml
+allowBuilds:
+  "<复制 pnpm 错误中给出的完整 key>": true
+~~~
+
+不要覆盖文件中已有条目，也不要批准宽泛/全局规则；这个 key 会随 Git 解析到的提交变化，必须以当前错误输出为准。
 
 ### 交给 Harness 安装
 
