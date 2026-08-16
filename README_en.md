@@ -7,6 +7,10 @@
 > [!IMPORTANT]
 > The project is currently `0.1.0-alpha.0` and has not been published as a release or supported npm package. Its development baseline is DeepSeek Harness source commit `47f9438` (`0.1.0-rc.5` manifests).
 
+> For the guarded, Chinese-first assisted-installation prompt, see [Quick install](README.md#快速安装推荐). The manual steps below remain the supported fallback.
+
+> **Experimental shortcut for the exact source baseline only:** `pnpm dsh plugin --profile web add github:SakalioLabs/dsh-code-ide#a6de795978ba54562cb6a13b300c9fc39d0bc017`. A Git source install may require a narrowly approved package build; it is not a replacement for the manual path below.
+
 ## What it is
 
 Installed Harness conversations gain a native, optional **IDE** tab. Chat remains the default. The IDE is created only after that tab is selected, and the normal message composer is hidden only for the session currently showing the IDE. Switching back restores the normal conversation.
@@ -36,7 +40,7 @@ The UI follows familiar VS Code workbench conventions, but it is not Code - OSS 
 - The platform binary from `@vscode/ripgrep@1.18.0`.
 - The exact `node-pty@1.1.0` peer supplied by the supported Harness Host graph. A missing or different peer is a compatibility failure; do not install a second native copy.
 
-The matching Harness RC dependency graph is not completely published. npm's older `0.0.1-rc.1` artifacts are incompatible, so registry-only installation is unsupported.
+npm currently publishes `@deepseek-ai/dsh@0.1.0-rc.6`, but this alpha has not been end-to-end verified against that release. It is not this project's promised installation baseline.
 
 ## Install from a local `.tgz`
 

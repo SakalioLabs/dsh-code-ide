@@ -7,6 +7,51 @@
 > [!IMPORTANT]
 > 当前版本为 `0.1.0-alpha.0`，尚未发布 GitHub Release，也没有可直接从 npm 安装的正式包。当前唯一验证基线是 DeepSeek Harness 提交 `47f943859bef60e4160492346772ded9b24f765a`（manifest `0.1.0-rc.5`）。
 
+## 快速安装（推荐）
+
+### 交给 Harness 协助安装
+
+在 Harness 的**标准模式**中（具有 `pwsh`/`bash`、Git、Node、pnpm 和文件写入工具），可将以下整段提示词直接发给 Harness。这是推荐入口：它会先做真正的只读预检，等待你的明确确认后才会安装；它不会自行升级 Harness、改全局包、重启服务或降低安全策略。
+
+~~~text
+请以“先检查、后确认”的方式协助我安装 dsh-code-ide；现在不要执行任何安装、写入、重启或权限升级。
+
+第一阶段只做只读检查：
+1. 找到当前使用的 Harness checkout、当前 DSH_HOME、可用 launcher（全局 dsh 或 checkout 内的 pnpm dsh），并显示 Node、pnpm、Git 与 Harness 版本；不要设置或替换 DSH_HOME。
+2. 仅当能确认 Harness 源码提交精确为 47f943859bef60e4160492346772ded9b24f765a（0.1.0-rc.5）时继续；无法确认、版本不匹配、没有网络/写权限或当前是只读/计划模式时，停止并说明最小人工解决步骤。不要升级、降级、重装 Harness，也不要修改全局 npm/pnpm 配置。
+3. 只读取现有 DSH_HOME/profile 文件来判断 web profile 是否已安装 dsh-code-ide；不要在这个阶段运行 `dsh plugin`、`plugin list` 或 `--dump-config`，因为缺失 profile 时这些命令可能创建文件。已安装、无法可靠判断或 profile 不存在时，都停止并报告现状，不要重复添加、更新或初始化 profile。
+4. 说明确认后可能创建或更新当前 DSH_HOME 下 web profile 的 package.json、锁文件、node_modules、cordis/bundle 配置；pnpm 还可能更新其受管理缓存。Git 安装会运行本项目的 prepare/build 脚本。说明后停止，列出将执行的安装与验证命令，等待我明确回复“确认安装”。
+
+只有在我回复“确认安装”后，才使用已经确认的 launcher 和当前 DSH_HOME 执行：
+<launcher> plugin --profile web add github:SakalioLabs/dsh-code-ide#a6de795978ba54562cb6a13b300c9fc39d0bc017
+
+若 shell 沙箱或系统要求权限，请展示确切原因并只请求这一次最小权限。若 pnpm 因 Git 依赖的构建审批而停止，请展示精确的包 key 和拟写入 profiles/web/pnpm-workspace.yaml 的最小 allowBuilds 改动，等待我再次明确确认；不要禁用 strictDepBuilds、ignore-scripts 或添加宽泛/全局许可。
+
+成功后只运行只读验证：
+<launcher> plugin --profile web list --depth 0
+<launcher> --profile web --dump-config
+确认官方 Web 条目仍在且 dsh-code-ide 只出现一次。不要自行启动、停止或重启 dsh web；最后告诉我是否需要重启以及准确命令。
+
+禁止修改或删除我的工作区、会话、用户文件、已有插件、Harness 源码、DSH_HOME、全局包、安全策略、防火墙或代理；任何一步失败或结果不明确时立即停止并报告。
+~~~
+
+这个提示词不会绕过 Harness 自身的审批：没有终端/写入权限、没有用户确认或环境不匹配时，应当安全停止。
+
+### 快捷试用（实验性）
+
+已经确认自己正在使用本 README 所列的 Harness 源码 checkout 时，可以直接安装固定 GitHub 提交：
+
+~~~sh
+# 在 deepseek-harness@47f9438 的 checkout 中，使用当前 DSH_HOME
+pnpm dsh plugin --profile web add github:SakalioLabs/dsh-code-ide#a6de795978ba54562cb6a13b300c9fc39d0bc017
+pnpm dsh plugin --profile web list --depth 0
+~~~
+
+这是 Git **源码**安装：pnpm 会执行本项目的 `prepare` 构建脚本。首次执行如果 pnpm 要求批准构建，请先审阅本仓库和 pnpm 输出的**精确包名**，只为该包添加最小 `allowBuilds` 许可后重试；不要关闭脚本安全策略、不要添加宽泛许可。此路径尚未完成独立干净环境的端到端验证，因此不是稳定发布替代方案。
+
+> [!CAUTION]
+> 不要把当前 npm 上的任意 Harness 版本、教程中的裸 `dsh plugin add …`，或其他 profile 当作已验证替代。若你不能确认基线，请使用上方的引导式安装或下方的手动安装。
+
 ## 它如何融入 Harness
 
 安装后，Harness 会话顶部会新增一个原生、可选的 **IDE** 页签；默认页仍然是 **对话**。只有用户打开 IDE 页签时，工作台才会挂载。该会话的普通消息输入栏会暂时隐藏；切回对话后会原样恢复。等待用户回答的问题或审批仍具有更高优先级，不会被 IDE 隐藏。
@@ -46,9 +91,9 @@ IDE 由同源路由 `/dsh-code-ide/` 提供，并嵌入官方会话区域。父�
 | 搜索 | `@vscode/ripgrep@1.18.0` 对应平台二进制 |
 | 终端 | 必须复用 Harness 提供的精确 peer `node-pty@1.1.0` |
 
-匹配的 Harness RC 依赖图尚未完整发布到 npm；npm 上较旧的 `0.0.1-rc.1` 不兼容。不要另外编译第二份 `node-pty`。
+npm 当前提供 `@deepseek-ai/dsh@0.1.0-rc.6`，但本 alpha 尚未完成对该发布版的端到端兼容验证；因此它不是本项目承诺的安装基线。不要另外编译第二份 `node-pty`。
 
-## 安装
+## 手动安装（可审计的后备方案）
 
 安装、启动、更新和卸载必须使用同一个 `DSH_HOME`。下面的 `pnpm dsh` 命令都在 Harness checkout 中运行；如果你的环境已有全局 `dsh`，可将其替换为 `dsh`。
 

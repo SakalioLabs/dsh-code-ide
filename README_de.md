@@ -7,6 +7,10 @@
 > [!IMPORTANT]
 > Das Projekt steht derzeit bei `0.1.0-alpha.0`. Es gibt noch weder eine öffentliche Version noch ein unterstütztes npm-Paket. Entwicklungsbasis ist der DeepSeek-Harness-Quellstand `47f9438` (Manifestlinie `0.1.0-rc.5`).
 
+> Den abgesicherten, chinesischsprachigen Assistenten-Prompt für die Installation findest du unter [Schnellinstallation](README.md#快速安装推荐). Die folgenden Schritte bleiben der nachvollziehbare manuelle Rückweg.
+
+> **Experimenteller Kurzweg nur für die exakte Quellbasis:** `pnpm dsh plugin --profile web add github:SakalioLabs/dsh-code-ide#a6de795978ba54562cb6a13b300c9fc39d0bc017`. Bei einer Git-Quellinstallation kann eine eng begrenzte Freigabe des Paket-Builds nötig sein; sie ersetzt nicht den unten beschriebenen manuellen Weg.
+
 ## Was ist das?
 
 Nach der Installation erscheint in Harness-Unterhaltungen ein nativer, optionaler Reiter **IDE**. Der Chat bleibt die Standardansicht. Die IDE wird erst beim Auswählen des Reiters erzeugt; nur für die gerade dort angezeigte Sitzung wird die normale Nachrichteneingabe ausgeblendet. Beim Wechsel zurück zum Chat steht sie wieder zur Verfügung.
@@ -36,7 +40,7 @@ Die Bedienstruktur orientiert sich an bekannten VS-Code-Konventionen. Das Projek
 - Das Plattformprogramm aus `@vscode/ripgrep@1.18.0`.
 - Exakt `node-pty@1.1.0` als Peer aus dem unterstützten Harness-Host-Graphen. Eine fehlende oder andere Version ist ein Kompatibilitätsfehler; keine zweite native Kopie installieren.
 
-Der passende Harness-RC-Abhängigkeitsgraph ist nicht vollständig veröffentlicht. Die älteren npm-Artefakte `0.0.1-rc.1` sind inkompatibel; eine reine Registry-Installation wird daher nicht unterstützt.
+Auf npm ist derzeit `@deepseek-ai/dsh@0.1.0-rc.6` veröffentlicht. Dieses Alpha wurde dagegen noch nicht Ende-zu-Ende verifiziert und ist daher keine zugesicherte Installationsbasis dieses Projekts.
 
 ## Installation aus einer lokalen `.tgz`
 
