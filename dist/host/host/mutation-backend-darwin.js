@@ -27,9 +27,10 @@ const C = {
     O_WRONLY: 1,
     O_CREAT: 0x00000200,
     O_EXCL: 0x00000800,
-    O_NOFOLLOW: 0x00000100,
     O_DIRECTORY: 0x00100000,
     O_CLOEXEC: 0x01000000,
+    // XNU rejects O_NOFOLLOW_ANY combined with O_NOFOLLOW. ANY is the
+    // stronger primitive: it rejects a symlink in every path component.
     O_NOFOLLOW_ANY: 0x20000000,
     AT_REMOVEDIR: 0x00000080,
     RENAME_EXCL: 0x00000004,
@@ -59,6 +60,10 @@ const STATFS_BYTES = 2168;
 const STATFS_FLAGS_OFFSET = 64;
 const STATFS_TYPE_OFFSET = 72;
 const STATFS_TYPE_BYTES = 16;
+/** Select the modern 64-bit-inode statfs symbol for each Darwin ABI. */
+export function darwinFstatfsSymbolForTesting(arch) {
+    return arch === 'x64' ? 'fstatfs$INODE64' : 'fstatfs';
+}
 const DARWIN_NODE_IO = Object.freeze({
     open: openFd,
     fstat: fstatFd,
@@ -204,7 +209,7 @@ class DarwinKernel {
     }
     async assertLocalApfs(fd) {
         const buffer = Buffer.alloc(STATFS_BYTES);
-        const result = await this.call('fstatfs', [this.ffi.DataType.I32, this.ffi.DataType.U8Array], [fd, buffer]);
+        const result = await this.call(darwinFstatfsSymbolForTesting(process.arch), [this.ffi.DataType.I32, this.ffi.DataType.U8Array], [fd, buffer]);
         if (result.value !== 0)
             throw new Error(`fstatfs failed with errno ${result.errnoCode}.`);
         const flags = buffer.readUInt32LE(STATFS_FLAGS_OFFSET);
@@ -329,7 +334,7 @@ class DarwinMutationWorkspace {
             let createdFd;
             if (request.operation.kind === 'createFile') {
                 try {
-                    createdFd = await this.io.open(stagingPath, C.O_WRONLY | C.O_CREAT | C.O_EXCL | C.O_NOFOLLOW | C.O_CLOEXEC | C.O_NOFOLLOW_ANY, 0o666);
+                    createdFd = await this.io.open(stagingPath, C.O_WRONLY | C.O_CREAT | C.O_EXCL | C.O_CLOEXEC | C.O_NOFOLLOW_ANY, 0o666);
                     stagingCreated = true;
                 }
                 catch (error) {
@@ -346,7 +351,7 @@ class DarwinMutationWorkspace {
                     return notCommitted(nodeIssue(error));
                 }
                 try {
-                    createdFd = await this.io.open(stagingPath, C.O_RDONLY | C.O_DIRECTORY | C.O_NOFOLLOW | C.O_CLOEXEC | C.O_NOFOLLOW_ANY, 0);
+                    createdFd = await this.io.open(stagingPath, C.O_RDONLY | C.O_DIRECTORY | C.O_CLOEXEC | C.O_NOFOLLOW_ANY, 0);
                 }
                 catch (error) {
                     return await cleanBeforeCommit(notCommitted(nodeIssue(error)));
@@ -449,7 +454,7 @@ class DarwinMutationBackend {
             throw new IdeHostError('MUTATION_ABORTED', 'The workspace mutation was cancelled.', 409);
         let rootFd;
         try {
-            rootFd = await openFd(request.registeredRoot, C.O_RDONLY | C.O_DIRECTORY | C.O_NOFOLLOW | C.O_CLOEXEC | C.O_NOFOLLOW_ANY, 0);
+            rootFd = await openFd(request.registeredRoot, C.O_RDONLY | C.O_DIRECTORY | C.O_CLOEXEC | C.O_NOFOLLOW_ANY, 0);
         }
         catch (error) {
             throw new IdeHostError('WORKSPACE_MUTATION_UNAVAILABLE', 'The Host could not open the workspace root without following symbolic links.', 501, { cause: error });
@@ -532,22 +537,26 @@ async function probe(backend) {
  * Create the macOS handle-relative backend only after libSystem, local APFS,
  * no-follow traversal and atomic no-replace publication pass a live witness.
  */
-export async function createDarwinMutationBackend() {
+export async function createProbedDarwinMutationBackendForTesting() {
     if (process.platform !== 'darwin' || (process.arch !== 'x64' && process.arch !== 'arm64')) {
-        return createUnavailableMutationBackend();
+        throw new Error('The Darwin mutation backend is unavailable on this platform.');
     }
-    let kernel;
-    let backend;
+    const kernel = await DarwinKernel.create();
+    const backend = new DarwinMutationBackend(kernel);
     try {
-        kernel = await DarwinKernel.create();
-        backend = new DarwinMutationBackend(kernel);
         await probe(backend);
         return backend;
     }
+    catch (error) {
+        await backend.dispose().catch(() => { });
+        throw error;
+    }
+}
+export async function createDarwinMutationBackend() {
+    try {
+        return await createProbedDarwinMutationBackendForTesting();
+    }
     catch {
-        await backend?.dispose().catch(() => { });
-        if (backend === undefined)
-            kernel?.dispose();
         return createUnavailableMutationBackend();
     }
 }

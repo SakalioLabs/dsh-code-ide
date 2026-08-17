@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { chmod, lstat, mkdir, mkdtemp, readFile, readdir, rename, rm, symlink, unlink, utimes, writeFile } from 'node:fs/promises'
+import { chmod, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, symlink, unlink, utimes, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -55,6 +55,10 @@ async function expectCode(operation: Promise<unknown>, code: string): Promise<Id
   }
 }
 
+async function temporaryDirectory(prefix: string): Promise<string> {
+  return await mkdtemp(join(await realpath(tmpdir()), prefix))
+}
+
 describe('WorkspaceMutationService', () => {
   let root: string
   let resources: WorkspaceResources
@@ -84,7 +88,7 @@ describe('WorkspaceMutationService', () => {
   }
 
   beforeEach(async () => {
-    root = await mkdtemp(join(tmpdir(), 'dsh-code-ide-mutations-'))
+    root = await temporaryDirectory('dsh-code-ide-mutations-')
     resources = new WorkspaceResources({
       list: () => [{ id: WORKSPACE_ID, path: root, title: 'Fixture' }],
     }, { maxQueuedMutations: 8 })
@@ -372,7 +376,7 @@ describe('WorkspaceMutationService', () => {
   })
 
   it('does not commit when a destination parent is rebound through a symlink at the native seam', async () => {
-    const outside = await mkdtemp(join(tmpdir(), 'dsh-code-ide-parent-fence-'))
+    const outside = await temporaryDirectory('dsh-code-ide-parent-fence-')
     const original = native.moveNoReplace.bind(native)
     let rebound: string | undefined
     native.moveNoReplace = async (source, destination) => {
@@ -401,7 +405,7 @@ describe('WorkspaceMutationService', () => {
 
   it('does not commit when the quarantine container is rebound through a symlink', async () => {
     await service.dispose()
-    const outside = await mkdtemp(join(tmpdir(), 'dsh-code-ide-quarantine-fence-'))
+    const outside = await temporaryDirectory('dsh-code-ide-quarantine-fence-')
     let rebound: string | undefined
     service = createService({}, {
       afterNativeCommit: async (kind, payload) => {
@@ -591,7 +595,7 @@ describe('WorkspaceMutationService', () => {
   })
 
   it('unlinks quarantined symlinks without following them during deferred purge', async () => {
-    const outside = await mkdtemp(join(tmpdir(), 'dsh-code-ide-purge-outside-'))
+    const outside = await temporaryDirectory('dsh-code-ide-purge-outside-')
     await writeFile(join(outside, 'keep.txt'), 'keep')
     await mkdir(join(root, 'folder'))
     try {

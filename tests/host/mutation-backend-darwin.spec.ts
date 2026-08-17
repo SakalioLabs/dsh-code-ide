@@ -6,7 +6,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createDarwinMutationBackend,
   createDarwinMutationBackendForTesting,
+  createProbedDarwinMutationBackendForTesting,
   createDarwinMutationWorkspaceForTesting,
+  darwinFstatfsSymbolForTesting,
   type DarwinMutationKernelPort,
   type DarwinNodeIoPort,
 } from '../../src/host/mutation-backend-darwin.js'
@@ -16,6 +18,11 @@ describe('Darwin openat mutation backend', () => {
 
   afterEach(async () => {
     while (cleanups.length > 0) await cleanups.pop()?.()
+  })
+
+  it('selects the modern statfs symbol for each supported Darwin ABI', () => {
+    expect(darwinFstatfsSymbolForTesting('x64')).toBe('fstatfs$INODE64')
+    expect(darwinFstatfsSymbolForTesting('arm64')).toBe('fstatfs')
   })
 
   it.skipIf(process.platform === 'darwin')('is unavailable on other operating systems', async () => {
@@ -134,7 +141,13 @@ describe('Darwin openat mutation backend', () => {
         expectedRootIdentity: { dev: identity.dev, ino: identity.ino },
         signal: new AbortController().signal,
       })
-      await probeStarted
+      await Promise.race([
+        probeStarted,
+        opening.then(
+          () => { throw new Error('Workspace opening completed before the probe gate.') },
+          error => { throw error },
+        ),
+      ])
       const disposing = backend.dispose()
       expect(dispose).not.toHaveBeenCalled()
       releaseProbe()
@@ -147,7 +160,9 @@ describe('Darwin openat mutation backend', () => {
   it.skipIf(process.platform !== 'darwin' || (process.arch !== 'x64' && process.arch !== 'arm64'))(
     'publishes files and directories without following workspace symlinks',
     async () => {
-      const backend = await createDarwinMutationBackend()
+      // The production factory fails closed. The platform gate deliberately
+      // uses the throwing witness so CI retains the exact native cause.
+      const backend = await createProbedDarwinMutationBackendForTesting()
       cleanups.push(async () => { await backend.dispose() })
       expect(backend.descriptor).toMatchObject({
         implementation: 'darwin-openat-handles',

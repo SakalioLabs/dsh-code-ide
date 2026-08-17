@@ -28,10 +28,10 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - name: Verify Linux structural mutation backend
-        if: runner.os == 'Linux'
+        if: ${{ !cancelled() && runner.os == 'Linux' }}
         run: pnpm vitest run tests/host/mutation-backend-linux.spec.ts --reporter=verbose
       - name: Verify macOS structural mutation backend
-        if: runner.os == 'macOS'
+        if: ${{ !cancelled() && runner.os == 'macOS' }}
         run: pnpm vitest run tests/host/mutation-backend-darwin.spec.ts --reporter=verbose
       - run: pnpm build
       - name: Verify committed distribution

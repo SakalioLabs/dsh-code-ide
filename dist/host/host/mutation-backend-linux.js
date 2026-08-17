@@ -469,7 +469,10 @@ async function probe(kernel) {
  * commit syscalls cannot bind the selected name atomically to an open fd.
  */
 export async function createLinuxMutationBackend() {
-    if (process.platform !== 'linux' || (process.arch !== 'x64' && process.arch !== 'arm64')) {
+    // libc syscall() is variadic. ffi-rs has no variadic CIF and the fixed-CIF
+    // call is only verified on x64; other architectures must remain fail-closed
+    // until a fixed-signature openat2 shim is shipped for them.
+    if (process.platform !== 'linux' || process.arch !== 'x64') {
         return createUnavailableMutationBackend();
     }
     let kernel;

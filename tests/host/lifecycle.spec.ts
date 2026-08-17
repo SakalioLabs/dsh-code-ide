@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
@@ -68,7 +68,7 @@ describe('Cordis child-component lifecycle', () => {
   let workspaceRoot: string
 
   beforeEach(async () => {
-    workspaceRoot = await mkdtemp(join(tmpdir(), 'dsh-code-ide-lifecycle-'))
+    workspaceRoot = await mkdtemp(join(await realpath(tmpdir()), 'dsh-code-ide-lifecycle-'))
     await writeFile(join(workspaceRoot, 'index.html'), '<!doctype html>')
   })
 

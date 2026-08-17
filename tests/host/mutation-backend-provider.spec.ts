@@ -37,7 +37,7 @@ function testBackend(implementation: MutationBackend['descriptor']['implementati
 
 const CURRENT_PLATFORM_IMPLEMENTATION = process.platform === 'win32' && process.arch === 'x64'
   ? 'windows-nt-handles'
-  : process.platform === 'linux' && (process.arch === 'x64' || process.arch === 'arm64')
+  : process.platform === 'linux' && process.arch === 'x64'
     ? 'linux-openat2-handles'
     : process.platform === 'darwin' && (process.arch === 'x64' || process.arch === 'arm64')
       ? 'darwin-openat-handles'

@@ -12,7 +12,7 @@ describe('Linux openat2 handle-relative mutation backend', () => {
     while (cleanups.length > 0) await cleanups.pop()?.()
   })
 
-  it.skipIf(process.platform !== 'linux' || (process.arch !== 'x64' && process.arch !== 'arm64'))(
+  it.skipIf(process.platform !== 'linux' || process.arch !== 'x64')(
     'creates files and directories while rename/delete remain explicitly fail-closed',
     async () => {
       const backend = await createLinuxMutationBackend()
@@ -114,6 +114,18 @@ describe('Linux openat2 handle-relative mutation backend', () => {
         workspaceId: 'wrong-root', registeredRoot: root,
         expectedRootIdentity: { dev: identity.dev, ino: identity.ino + 1n }, signal,
       })).rejects.toMatchObject({ code: 'WORKSPACE_IDENTITY_CHANGED' })
+    },
+  )
+
+  it.runIf(process.platform === 'linux' && process.arch !== 'x64')(
+    'fails closed when no fixed-signature openat2 shim is available for the architecture',
+    async () => {
+      const backend = await createLinuxMutationBackend()
+      cleanups.push(async () => { await backend.dispose() })
+      expect(backend.descriptor).toMatchObject({
+        implementation: 'unavailable',
+        capabilities: { createFile: false, createDirectory: false, rename: false, delete: false },
+      })
     },
   )
 })

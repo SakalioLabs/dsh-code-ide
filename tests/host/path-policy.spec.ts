@@ -58,7 +58,7 @@ describe('workspace path policy', () => {
   })
 
   it('accepts an extended-length spelling of a Windows workspace root', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'dsh-code-ide-root-'))
+    const root = await mkdtemp(join(await realpath(tmpdir()), 'dsh-code-ide-root-'))
     roots.push(root)
     const canonical = await realpath(root)
 
@@ -73,7 +73,7 @@ describe('workspace path policy', () => {
   })
 
   it.runIf(process.platform === 'win32')('rejects a workspace reached through an ancestor junction', async () => {
-    const container = await mkdtemp(join(tmpdir(), 'dsh-code-ide-root-junction-'))
+    const container = await mkdtemp(join(await realpath(tmpdir()), 'dsh-code-ide-root-junction-'))
     roots.push(container)
     const target = join(container, 'target')
     const workspace = join(target, 'workspace')

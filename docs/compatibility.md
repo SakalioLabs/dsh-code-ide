@@ -13,11 +13,11 @@ Runtime requirements:
 | Harness profile | Web profile with a registered local workspace |
 | Browser origin | The same loopback origin that serves Harness |
 
-CI runs type checking, unit tests, builds, and package creation on Windows x64, Ubuntu x64/ARM64, and macOS 15 x64/ARM64 with Node `22.19.0`. Linux and macOS also run their platform backend test directly, so a native probe that silently falls back to the unavailable backend fails CI.
+CI runs type checking, unit tests, builds, and package creation on Windows x64, Ubuntu x64/ARM64, and macOS 15 x64/ARM64 with Node `22.19.0`. Ubuntu x64 and both macOS architectures run their native creation witness directly. Ubuntu ARM64 instead verifies the explicit all-false fallback until a fixed-signature `openat2` shim is available.
 
 ## Host platform matrix
 
-| Capability | Windows x64 + NTFS | Linux | macOS |
+| Capability | Windows x64 + NTFS | Linux x64 | macOS x64/arm64 |
 | --- | --- | --- | --- |
 | Browse, inspect, and read | Yes | Yes | Yes |
 | Edit and versioned save | Yes | Yes | Yes |
@@ -29,7 +29,7 @@ CI runs type checking, unit tests, builds, and package creation on Windows x64, 
 Structural operations are deliberately fail-closed and each backend is enabled only after its native ABI and containment witness pass at runtime:
 
 - Windows requires x64, NTFS, and the handle-relative NT runtime witness. Windows ARM64 and non-NTFS workspaces remain unavailable.
-- Linux requires the `openat2` containment flags, descriptor identity binding, the native FFI ABI, and its no-replace create witness. Rename and delete remain unavailable until their complete commit and recursive-cleanup contracts are proven.
+- Linux requires x64, the `openat2` containment flags, descriptor identity binding, the native FFI ABI, and its no-replace create witness. Linux ARM64 and other architectures remain all-false until a fixed-signature `openat2` shim replaces the unsupported variadic FFI call. Rename and delete remain unavailable until their complete commit and recursive-cleanup contracts are proven.
 - macOS requires x64 or arm64, a local APFS workspace, fixed-signature root/reserved-staging descriptor acquisition, the libSystem ABI, root-descriptor-relative no-follow publication, and a no-replace create witness. Rename and delete remain unavailable until their complete commit and recursive-cleanup contracts are proven.
 
 An unsupported platform, unsupported filesystem, failed native load, missing primitive, or failed witness returns the all-false backend. Browse, edit, versioned save, search, and terminal capabilities remain independent of this structural backend.

@@ -11,7 +11,7 @@ This roadmap describes direction, not a compatibility promise. The project is cu
 - Up to four editor groups with tab reorder and top/right split gestures.
 - xterm.js bottom panel with bounded Host PTYs.
 - Version-aware saves, conflict UI, browser-local hot-exit recovery, and receipt-backed structural mutations.
-- Windows x64 + NTFS handle-relative create, move/rename, and delete; fail-closed structural controls elsewhere.
+- Windows x64 + NTFS handle-relative create, move/rename, and delete; creation-only trusted-local backends on Linux x64 and macOS x64/arm64; fail-closed structural controls elsewhere.
 - Git installation from the repository's checked-in, CI-verified prebuilt `dist/`, plus GitHub prerelease tarballs with SHA-256 checksums; npm publication remains out of scope for this alpha.
 
 ## Near term: stabilize the alpha
@@ -24,7 +24,7 @@ This roadmap describes direction, not a compatibility promise. The project is cu
 
 ## Platform work
 
-- Design and prove containment backends for Linux and macOS before enabling Explorer structural mutations there.
+- Add a fixed-signature native `openat2` shim for Linux ARM64 and other architectures, then prove move/rename and recursive-delete contracts for Linux and macOS.
 - Expand CI and runtime witnesses across supported Node versions, filesystems, and host architectures.
 - Establish a documented Chromium/Firefox/Safari browser matrix instead of inferred support.
 

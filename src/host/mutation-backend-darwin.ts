@@ -43,9 +43,10 @@ const C = {
   O_WRONLY: 1,
   O_CREAT: 0x00000200,
   O_EXCL: 0x00000800,
-  O_NOFOLLOW: 0x00000100,
   O_DIRECTORY: 0x00100000,
   O_CLOEXEC: 0x01000000,
+  // XNU rejects O_NOFOLLOW_ANY combined with O_NOFOLLOW. ANY is the
+  // stronger primitive: it rejects a symlink in every path component.
   O_NOFOLLOW_ANY: 0x20000000,
   AT_REMOVEDIR: 0x00000080,
   RENAME_EXCL: 0x00000004,
@@ -96,6 +97,11 @@ export interface DarwinNodeIoPort {
   fstat(fd: number): Promise<BigIntStats>
   lstat(path: string): Promise<BigIntStats>
   mkdir(path: string, mode: number): Promise<void>
+}
+
+/** Select the modern 64-bit-inode statfs symbol for each Darwin ABI. */
+export function darwinFstatfsSymbolForTesting(arch: string): string {
+  return arch === 'x64' ? 'fstatfs$INODE64' : 'fstatfs'
 }
 
 const DARWIN_NODE_IO: DarwinNodeIoPort = Object.freeze({
@@ -258,7 +264,7 @@ class DarwinKernel implements DarwinMutationKernelPort {
   async assertLocalApfs(fd: number): Promise<void> {
     const buffer = Buffer.alloc(STATFS_BYTES)
     const result = await this.call(
-      'fstatfs',
+      darwinFstatfsSymbolForTesting(process.arch),
       [this.ffi.DataType.I32, this.ffi.DataType.U8Array],
       [fd, buffer],
     )
@@ -380,7 +386,7 @@ class DarwinMutationWorkspace implements MutationBackendWorkspace {
         try {
           createdFd = await this.io.open(
             stagingPath,
-            C.O_WRONLY | C.O_CREAT | C.O_EXCL | C.O_NOFOLLOW | C.O_CLOEXEC | C.O_NOFOLLOW_ANY,
+            C.O_WRONLY | C.O_CREAT | C.O_EXCL | C.O_CLOEXEC | C.O_NOFOLLOW_ANY,
             0o666,
           )
           stagingCreated = true
@@ -398,7 +404,7 @@ class DarwinMutationWorkspace implements MutationBackendWorkspace {
         try {
           createdFd = await this.io.open(
             stagingPath,
-            C.O_RDONLY | C.O_DIRECTORY | C.O_NOFOLLOW | C.O_CLOEXEC | C.O_NOFOLLOW_ANY,
+            C.O_RDONLY | C.O_DIRECTORY | C.O_CLOEXEC | C.O_NOFOLLOW_ANY,
             0,
           )
         } catch (error) {
@@ -530,7 +536,7 @@ class DarwinMutationBackend implements MutationBackend {
     try {
       rootFd = await openFd(
         request.registeredRoot,
-        C.O_RDONLY | C.O_DIRECTORY | C.O_NOFOLLOW | C.O_CLOEXEC | C.O_NOFOLLOW_ANY,
+        C.O_RDONLY | C.O_DIRECTORY | C.O_CLOEXEC | C.O_NOFOLLOW_ANY,
         0,
       )
     } catch (error) {
@@ -633,20 +639,25 @@ async function probe(backend: DarwinMutationBackend): Promise<void> {
  * Create the macOS handle-relative backend only after libSystem, local APFS,
  * no-follow traversal and atomic no-replace publication pass a live witness.
  */
-export async function createDarwinMutationBackend(): Promise<MutationBackend> {
+export async function createProbedDarwinMutationBackendForTesting(): Promise<MutationBackend> {
   if (process.platform !== 'darwin' || (process.arch !== 'x64' && process.arch !== 'arm64')) {
-    return createUnavailableMutationBackend()
+    throw new Error('The Darwin mutation backend is unavailable on this platform.')
   }
-  let kernel: DarwinKernel | undefined
-  let backend: DarwinMutationBackend | undefined
+  const kernel = await DarwinKernel.create()
+  const backend = new DarwinMutationBackend(kernel)
   try {
-    kernel = await DarwinKernel.create()
-    backend = new DarwinMutationBackend(kernel)
     await probe(backend)
     return backend
+  } catch (error) {
+    await backend.dispose().catch(() => {})
+    throw error
+  }
+}
+
+export async function createDarwinMutationBackend(): Promise<MutationBackend> {
+  try {
+    return await createProbedDarwinMutationBackendForTesting()
   } catch {
-    await backend?.dispose().catch(() => {})
-    if (backend === undefined) kernel?.dispose()
     return createUnavailableMutationBackend()
   }
 }

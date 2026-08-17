@@ -33,7 +33,7 @@ Structural mutations are exposed only after a platform backend passes its runtim
 Platform implementations are deliberately asymmetric:
 
 - Windows x64 uses the NTFS handle-relative backend and excludes reparse points.
-- Linux uses `openat2` with beneath, no-symlink, no-magic-link, and no-cross-device resolution constraints, plus descriptor-relative no-replace creation and post-commit identity verification. Its rename and delete capabilities remain false.
+- Linux x64 uses `openat2` with beneath, no-symlink, no-magic-link, and no-cross-device resolution constraints, plus descriptor-relative no-replace creation and post-commit identity verification. Linux ARM64 and other architectures remain fail-closed until a fixed-signature native `openat2` shim is available. Rename and delete capabilities remain false on Linux.
 - macOS x64/arm64 uses a pinned root descriptor on a local APFS volume, fixed-signature Node filesystem calls for root and reserved-staging descriptor acquisition, and no-replace/no-follow `renameatx_np` publication with post-commit identity verification. Its rename and delete capabilities remain false.
 
 The provider loads only the backend matching the Host platform. An unsupported filesystem or architecture, missing native primitive, dynamic-load failure, or failed witness installs the all-false backend; it never promotes an unproven operation.

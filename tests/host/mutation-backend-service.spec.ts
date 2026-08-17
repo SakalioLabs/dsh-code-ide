@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, realpath, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -21,9 +21,10 @@ describe('WorkspaceMutationService native backend boundary', () => {
   })
 
   it('projects immutable capabilities and canonical segments through the injected backend', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'dsh-native-backend-'))
+    const canonicalTmp = await realpath(tmpdir())
+    const root = await mkdtemp(join(canonicalTmp, 'dsh-native-backend-'))
     cleanups.push(async () => { await rm(root, { recursive: true, force: true }) })
-    const replacementRoot = await mkdtemp(join(tmpdir(), 'dsh-native-backend-replacement-'))
+    const replacementRoot = await mkdtemp(join(canonicalTmp, 'dsh-native-backend-replacement-'))
     cleanups.push(async () => { await rm(replacementRoot, { recursive: true, force: true }) })
     let registeredRoot = root
     const executions: MutationBackendExecution[] = []

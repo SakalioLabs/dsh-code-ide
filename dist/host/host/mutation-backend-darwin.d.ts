@@ -17,6 +17,8 @@ export interface DarwinNodeIoPort {
     lstat(path: string): Promise<BigIntStats>;
     mkdir(path: string, mode: number): Promise<void>;
 }
+/** Select the modern 64-bit-inode statfs symbol for each Darwin ABI. */
+export declare function darwinFstatfsSymbolForTesting(arch: string): string;
 export interface DarwinMutationWorkspaceTestOptions {
     readonly workspaceId: string;
     readonly canonicalRoot: string;
@@ -37,4 +39,5 @@ export declare function createDarwinMutationBackendForTesting(kernel: DarwinMuta
  * Create the macOS handle-relative backend only after libSystem, local APFS,
  * no-follow traversal and atomic no-replace publication pass a live witness.
  */
+export declare function createProbedDarwinMutationBackendForTesting(): Promise<MutationBackend>;
 export declare function createDarwinMutationBackend(): Promise<MutationBackend>;
