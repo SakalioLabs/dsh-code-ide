@@ -1,0 +1,12 @@
+export { apply, inject, name } from './host/plugin.js';
+export { WorkspaceFileService } from './host/filesystem.js';
+export { WorkspaceSearchService } from './host/search.js';
+export { WorkspaceMutationService } from './host/workspace-mutations.js';
+export { TERMINAL_CAPABILITY, WORKSPACE_FILES_CAPABILITY, WORKSPACE_MUTATIONS_CAPABILITY, WORKSPACE_SEARCH_CAPABILITY, } from './host/capabilities.js';
+export { sanitizeTerminalEnv } from './host/terminal.js';
+export { isLoopbackHostname, isTrustedLocalRequest } from './host/trust.js';
+export { IdeHostError } from './host/errors.js';
+export { DEFAULT_MAX_INSPECT_TARGETS, } from './shared/workspace-observation.js';
+export { MAX_CLIENT_EDITABLE_FILE_BYTES, READ_ONLY_FILE_PREVIEW_BYTES, } from './shared/workspace-files.js';
+export { matchesSearchPath, searchTextContent, textSearchPreview, validateTextSearchPattern, } from './shared/workspace-search.js';
+export { MUTATION_BUDGETS, WORKSPACE_MUTATIONS_PROTOCOL, WORKSPACE_MUTATIONS_ROUTE, } from './shared/workspace-mutations.js';

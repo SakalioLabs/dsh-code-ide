@@ -9,6 +9,6 @@ export default defineConfig({
   build: {
     outDir: fileURLToPath(new URL('./dist/client', import.meta.url)),
     emptyOutDir: true,
-    sourcemap: true,
+    sourcemap: false,
   },
 })

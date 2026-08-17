@@ -20,7 +20,7 @@ Useful commands:
 | `pnpm test` | Runs the Vitest suite once |
 | `pnpm test:watch` | Runs Vitest in watch mode |
 | `pnpm build` | Rebuilds Host, standalone client, and Harness client injection |
-| `pnpm pack` | Runs `prepare`, then creates the installable `.tgz` |
+| `pnpm build && pnpm pack` | Rebuilds all package outputs, then creates the installable `.tgz`; `pnpm pack` alone does not build |
 
 The standalone Vite page does not invent Host capabilities. File, search, mutation, and terminal operations require the plugin to be loaded by Harness.
 
@@ -44,6 +44,8 @@ examples/           # reference bundle patch; installation applies the real patc
 - `dist/client/` - the standalone/embedded workbench assets;
 - `dist/harness-client/` - the native Harness view contribution.
 
+The committed `dist/` tree is the Git-install surface. After changing source code, run `pnpm build` and include the refreshed output in the same change. CI rebuilds these targets and verifies that committed `dist/` is synchronized before accepting the change.
+
 ## Test against the pinned Harness
 
 Prepare the supported Harness checkout:
@@ -60,6 +62,7 @@ Build and pack this repository:
 
 ~~~bash
 pnpm install --frozen-lockfile
+pnpm build
 pnpm pack
 ~~~
 
@@ -91,4 +94,4 @@ Rebuild the plugin, re-add the same source, and restart Harness after changing H
 - Add focused regression tests for lifecycle, conflict, cancellation, drag/drop, persistence, or security-boundary changes.
 - Prefer lazy language chunks and bounded background work to keep the plugin lightweight.
 
-CI repeats `install`, `typecheck`, `test`, `build`, and `pack` on Windows and Ubuntu and uploads the generated package as a workflow artifact.
+CI repeats `install`, `typecheck`, `test`, `build`, and `pack` on Windows and Ubuntu, verifies the committed `dist/` against a clean build, and uploads the generated package as a workflow artifact.

@@ -12,21 +12,21 @@
 已安装 `dsh` 的用户只需运行：
 
 ~~~sh
-dsh plugin --profile web add https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/dsh-code-ide-0.1.0-alpha.0.tgz
+dsh plugin --profile web add github:SakalioLabs/dsh-code-ide
 ~~~
 
-如果你从 Harness 源码 checkout 运行，则在该目录中把上面的 `dsh` 替换为 `pnpm dsh`。Release `.tgz` 已包含构建产物，安装时不会再次执行本插件的 `prepare`，因此不需要为 `dsh-code-ide` 配置 `allowBuilds`；也不需要 clone 本插件或手工复制 patch。
+如果你从 Harness 源码 checkout 运行，则在该目录中把上面的 `dsh` 替换为 `pnpm dsh`。本仓库已提交与源码同步的预构建 `dist/`，并且不包含安装时构建脚本；Git 安装不会在用户环境重新构建本插件，因此不需要为 `dsh-code-ide` 配置 `allowBuilds`，也不需要 clone 本插件或手工复制 patch。
 
 ### 交给 Harness 安装
 
 把下面一句直接发给 Harness 即可：
 
 ~~~text
-请将 https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/dsh-code-ide-0.1.0-alpha.0.tgz 安装到当前 DeepSeek Harness 的 Web profile；不要升级 Harness、不要修改全局配置，并在完成后核对 plugin list 与 --dump-config 中只有一个 dsh-code-ide。
+请将 github:SakalioLabs/dsh-code-ide 安装到当前 DeepSeek Harness 的 Web profile，并在完成后核对 plugin list 与 --dump-config 中只有一个 dsh-code-ide。
 ~~~
 
 > [!CAUTION]
-> 这是固定到 `v0.1.0-alpha.0` 的 alpha 安装路径。需要离线安装、校验下载内容或排障时，请使用下方的可审计流程。
+> 上面的 GitHub 简写会跟随仓库 `main`。需要固定到已发布版本、校验下载内容或离线留档时，请使用下方的 GitHub Release 流程。
 
 ## 它如何融入 Harness
 
@@ -83,7 +83,7 @@ pnpm install --frozen-lockfile
 pnpm build
 ~~~
 
-### 2A. 下载并校验 GitHub Release（推荐）
+### 2A. 下载并校验固定版本
 
 Linux/macOS：
 
@@ -110,7 +110,7 @@ if ($actual -ne $expected) { throw "SHA-256 mismatch" }
 pnpm dsh plugin --profile web add /absolute/path/to/dsh-code-ide-0.1.0-alpha.0.tgz
 ~~~
 
-也可以直接使用快速安装中的 Release URL；先下载再校验适用于需要审计或离线留档的环境。
+这是固定版本、可校验和可离线留档的安装方式；日常快速安装使用顶部的 GitHub 简写。
 
 ### 2B. 从本地源码或本地打包安装
 
@@ -131,15 +131,15 @@ pnpm dsh plugin --profile web add /absolute/path/to/dsh-code-ide
 
 本地目录是开发工作流；修改 Host 或注入客户端后需要重新构建、重新 `add` 并重启 Harness。
 
-### 2C. 跟随滚动 `main` 的 Git 安装
+### 2C. Git 快捷安装
 
-只有确实希望跟随源码 `main` 时才使用：
+使用与快速安装相同的 GitHub 简写：
 
 ~~~sh
 pnpm dsh plugin --profile web add github:SakalioLabs/dsh-code-ide
 ~~~
 
-Git 依赖会在安装时执行 `prepare`。若 pnpm 报 `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`，只把错误中给出的**完整精确 key**合并到 `$DSH_HOME/profiles/web/pnpm-workspace.yaml` 已有的 `allowBuilds:` 中，再重跑命令；不要覆盖现有条目或放宽全局策略。可在 Git spec 后加 `#<commit>` 固定源码，但发布用户应优先使用上面的预构建 Release。
+仓库中的预构建 `dist/` 由 CI 校验，Git 安装不会执行本插件的构建脚本，也不需要 `allowBuilds`。该命令跟随滚动的 `main`；若需要可复现且带校验和的安装，请使用上面的固定 Release。
 
 ### 3. 核对并启动
 
@@ -155,9 +155,13 @@ pnpm dsh web
 
 ## 更新与卸载
 
-更新前先停止 `dsh web`。本地源码安装先重新构建，再运行原来的 `add`；`.tgz` 安装则对新包路径再次运行 `add`，然后重启 Harness。
+更新前先停止 `dsh web`。GitHub 简写安装可重新运行下面的 `add`；固定版本用户改用新 Release 的 URL 或已校验本地包；本地源码安装则先重新构建。随后重启 Harness。
 
 ~~~sh
+# 更新滚动 main
+pnpm dsh plugin --profile web add github:SakalioLabs/dsh-code-ide
+
+# 卸载
 pnpm dsh plugin --profile web remove dsh-code-ide
 ~~~
 

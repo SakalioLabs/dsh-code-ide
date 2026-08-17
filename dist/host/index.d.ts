@@ -1,0 +1,13 @@
+export { apply, inject, name } from './host/plugin.js';
+export type { Config } from './host/plugin.js';
+export { WorkspaceFileService } from './host/filesystem.js';
+export { WorkspaceSearchService } from './host/search.js';
+export { WorkspaceMutationService } from './host/workspace-mutations.js';
+export { TERMINAL_CAPABILITY, WORKSPACE_FILES_CAPABILITY, WORKSPACE_MUTATIONS_CAPABILITY, WORKSPACE_SEARCH_CAPABILITY, } from './host/capabilities.js';
+export { sanitizeTerminalEnv } from './host/terminal.js';
+export { isLoopbackHostname, isTrustedLocalRequest } from './host/trust.js';
+export { IdeHostError } from './host/errors.js';
+export { DEFAULT_MAX_INSPECT_TARGETS, type InspectRequest, type InspectResponse, type ObservationKind, type ObservationSnapshot, type ObservationTarget, } from './shared/workspace-observation.js';
+export { MAX_CLIENT_EDITABLE_FILE_BYTES, READ_ONLY_FILE_PREVIEW_BYTES, type ReadFileResponse, type ReadOnlyFilePresentation, } from './shared/workspace-files.js';
+export { matchesSearchPath, searchTextContent, textSearchPreview, validateTextSearchPattern, type FindFileItem, type FindFilesRequest, type FindFilesResponse, type SearchTextRequest, type SearchTextResponse, type TextSearchItem, type TextSearchRange, type WorkspaceTextSearchQuery, } from './shared/workspace-search.js';
+export { MUTATION_BUDGETS, WORKSPACE_MUTATIONS_PROTOCOL, WORKSPACE_MUTATIONS_ROUTE, type MutationProviderRequest, type MutationProviderResponse, type MutationReceipt, type MutationReceiptState, type MutationStatusRequest, type MutateWorkspaceRequest, type WorkspaceMutation, type WorkspaceMutationRequest, type WorkspaceMutationResult, } from './shared/workspace-mutations.js';

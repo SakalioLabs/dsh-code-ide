@@ -9,7 +9,7 @@
 
 > 安全確認付きの中国語インストール支援プロンプトは、[クイックインストール](README.md#快速安装推荐) を参照してください。以下の手順は検証可能な手動フォールバックです。
 
-> **クイックインストール:** `dsh plugin --profile web add https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/dsh-code-ide-0.1.0-alpha.0.tgz`。Harness のソース checkout では `dsh` の代わりに `pnpm dsh` を使います。プレリリースの `.tgz` にはビルド済み成果物が含まれ、インストール時に本プラグインの `prepare` は実行されないため、`dsh-code-ide` 用の `allowBuilds` は不要です。
+> **クイックインストール:** `dsh plugin --profile web add github:SakalioLabs/dsh-code-ide`。Harness のソース checkout では `dsh` の代わりに `pnpm dsh` を使います。このリポジトリにはソースと同期したビルド済みの `dist/` がコミットされており、インストール時に実行されるビルドスクリプトはありません。そのため GitHub からのインストール時にユーザー環境で再ビルドされず、`dsh-code-ide` 用の `allowBuilds` も不要です。
 
 ## 概要
 
@@ -42,7 +42,7 @@
 
 npm では現在 `@deepseek-ai/dsh@0.1.0-rc.6` が公開されていますが、本 alpha はこのリリースでエンドツーエンド検証されていません。したがって、本プロジェクトが保証するインストール基準ではありません。
 
-## GitHub プレリリースからインストール（推奨）
+## GitHub からインストール（推奨）
 
 1 つのインストールでは、`plugin add`、`plugin list`、`--dump-config`、`web` のすべてで同じ `DSH_HOME` を使用してください。明示的に設定する場合は、次のコマンドを実行する前に同じシェルで一度だけ export します。別の値を使うと、別の profile ストアが選ばれます。
 
@@ -56,16 +56,18 @@ corepack pnpm install --frozen-lockfile
 corepack pnpm build
 ~~~
 
-Harness の checkout から固定プレリリースを直接インストールします。
+Harness の checkout から現在の `main` ビルドを直接インストールします。
 
 ~~~sh
-corepack pnpm dsh plugin --profile web add https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/dsh-code-ide-0.1.0-alpha.0.tgz
+corepack pnpm dsh plugin --profile web add github:SakalioLabs/dsh-code-ide
 corepack pnpm dsh plugin --profile web list --depth 0
 corepack pnpm dsh --profile web --dump-config
 corepack pnpm dsh web
 ~~~
 
-監査可能なインストールやオフライン保管には、パッケージとチェックサムを先にダウンロードします。
+コミット済みの `dist/` は CI で検証されます。このコマンドはプラグインをビルドせず、`allowBuilds` も不要ですが、移動する `main` ブランチを追従します。
+
+固定版、監査可能なインストール、またはオフライン保管には、Release パッケージとチェックサムを先にダウンロードします。
 
 ~~~sh
 curl -fLO https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/dsh-code-ide-0.1.0-alpha.0.tgz
@@ -99,13 +101,13 @@ corepack pnpm dsh --profile web --dump-config
 corepack pnpm dsh web
 ~~~
 
-これは開発用の手順であり、プレリリースの推奨インストール経路ではありません。移動する `main` ブランチを追従する場合だけ、次を使います。
+これは開発用の手順であり、推奨する GitHub インストール経路ではありません。ローカル checkout なしでビルド済みの `main` をインストールするには、次を使います。
 
 ~~~sh
 corepack pnpm dsh plugin --profile web add github:SakalioLabs/dsh-code-ide
 ~~~
 
-Git 依存はインストール時に `prepare` を実行します。pnpm が `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED` を出した場合は、pnpm が表示した完全かつ正確な key だけを `$DSH_HOME/profiles/web/pnpm-workspace.yaml` の既存 `allowBuilds` に統合して再実行してください。ポリシー全体を無効化したり、広範な許可を追加したりしないでください。Git spec の末尾に `#<commit>` を付ければ固定できますが、リリース利用者は上のビルド済み `.tgz` を優先してください。
+リポジトリには CI 検証済みのビルド済み `dist/` が含まれ、インストール時に実行されるビルドスクリプトはないため、このコマンドに `allowBuilds` は不要です。再現性や検証が必要な場合は、上の固定 Release パッケージとチェックサムを使用してください。
 
 ## 設定
 
@@ -194,11 +196,11 @@ corepack pnpm build
 
 ## 更新とアンインストール
 
-Harness を停止し、固定プレリリースを入れ直します。
+Harness を停止し、現在の `main` ビルドを再度追加します。検証済み Release を追従する場合は、代わりに新しい固定 Release URL を使います。
 
 ~~~sh
 corepack pnpm dsh plugin --profile web remove dsh-code-ide
-corepack pnpm dsh plugin --profile web add https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/dsh-code-ide-0.1.0-alpha.0.tgz
+corepack pnpm dsh plugin --profile web add github:SakalioLabs/dsh-code-ide
 corepack pnpm dsh plugin --profile web list --depth 0
 corepack pnpm dsh --profile web --dump-config
 ~~~

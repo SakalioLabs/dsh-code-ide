@@ -1,0 +1,2 @@
+dist/** text eol=lf linguist-generated=true whitespace=-trailing-space
+dist/client/assets/*.woff binary

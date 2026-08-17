@@ -28,6 +28,12 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      - name: Verify committed distribution
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code -- dist
+          test -z "$(git status --porcelain --untracked-files=all -- dist)"
       - run: pnpm pack
 
       - uses: actions/upload-artifact@v4

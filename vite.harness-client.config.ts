@@ -12,7 +12,7 @@ export default defineConfig({
   build: {
     outDir: fileURLToPath(new URL('./dist/harness-client', import.meta.url)),
     emptyOutDir: true,
-    sourcemap: true,
+    sourcemap: false,
     minify: false,
     lib: {
       entry: fileURLToPath(new URL('./src/harness-client/index.tsx', import.meta.url)),

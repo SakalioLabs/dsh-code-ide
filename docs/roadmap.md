@@ -12,7 +12,7 @@ This roadmap describes direction, not a compatibility promise. The project is cu
 - xterm.js bottom panel with bounded Host PTYs.
 - Version-aware saves, conflict UI, browser-local hot-exit recovery, and receipt-backed structural mutations.
 - Windows x64 + NTFS handle-relative create, move/rename, and delete; fail-closed structural controls elsewhere.
-- GitHub prerelease packaging with a prebuilt plugin tarball and SHA-256 checksum; npm publication remains out of scope for this alpha.
+- Git installation from the repository's checked-in, CI-verified prebuilt `dist/`, plus GitHub prerelease tarballs with SHA-256 checksums; npm publication remains out of scope for this alpha.
 
 ## Near term: stabilize the alpha
 

@@ -58,7 +58,11 @@ jobs:
           set -euo pipefail
 
           mkdir release
+          pnpm build
           pnpm pack --pack-destination release
+
+          git diff --exit-code -- dist
+          test -z "$(git status --porcelain --untracked-files=all -- dist)"
 
           mapfile -t archives < <(find release -maxdepth 1 -type f -name '*.tgz' -print | sort)
           if [[ "${#archives[@]}" -ne 1 ]]; then
@@ -97,7 +101,7 @@ jobs:
             { encoding: 'utf8' },
           ))
           const scripts = manifest.scripts ?? {}
-          const forbiddenScripts = ['prepare', 'preinstall', 'install', 'postinstall']
+          const forbiddenScripts = ['prepare', 'prepack', 'preinstall', 'install', 'postinstall']
           const present = forbiddenScripts.filter((name) => Object.hasOwn(scripts, name))
 
           if (present.length > 0) {

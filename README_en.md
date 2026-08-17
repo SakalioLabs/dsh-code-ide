@@ -9,7 +9,7 @@
 
 > For the guarded, Chinese-first assisted-installation prompt, see [Quick install](README.md#快速安装推荐). The manual steps below remain the supported fallback.
 
-> **Quick install:** `dsh plugin --profile web add https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/dsh-code-ide-0.1.0-alpha.0.tgz`. In a Harness source checkout, use `pnpm dsh` instead of `dsh`. The prerelease tarball already contains the build output and does not run this plugin's `prepare` during installation, so it needs no `dsh-code-ide` `allowBuilds` entry.
+> **Quick install:** `dsh plugin --profile web add github:SakalioLabs/dsh-code-ide`. In a Harness source checkout, use `pnpm dsh` instead of `dsh`. This repository commits a prebuilt `dist/` tree that is kept in sync with the source and defines no install-time build script. A GitHub install therefore does not rebuild the plugin on the user's machine and needs no `dsh-code-ide` `allowBuilds` entry.
 
 ## What it is
 
@@ -42,7 +42,7 @@ The UI follows familiar VS Code workbench conventions, but it is not Code - OSS 
 
 npm currently publishes `@deepseek-ai/dsh@0.1.0-rc.6`, but this alpha has not been end-to-end verified against that release. It is not this project's promised installation baseline.
 
-## Install the GitHub prerelease (recommended)
+## Install from GitHub (recommended)
 
 Use the same `DSH_HOME` value for every Harness command in one installation: `plugin add`, `plugin list`, `--dump-config`, and `web`. If you set `DSH_HOME` explicitly, export it once in the shell before running the following commands; using another value later selects a different profile store.
 
@@ -56,16 +56,18 @@ corepack pnpm install --frozen-lockfile
 corepack pnpm build
 ~~~
 
-Install the fixed prerelease directly from the Harness checkout:
+Install the current `main` build directly from the Harness checkout:
 
 ~~~sh
-corepack pnpm dsh plugin --profile web add https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/dsh-code-ide-0.1.0-alpha.0.tgz
+corepack pnpm dsh plugin --profile web add github:SakalioLabs/dsh-code-ide
 corepack pnpm dsh plugin --profile web list --depth 0
 corepack pnpm dsh --profile web --dump-config
 corepack pnpm dsh web
 ~~~
 
-For an auditable or offline installation, download the package and checksum first:
+The checked-in `dist/` is verified by CI. This command does not run a plugin build or require an `allowBuilds` entry, but it follows the rolling `main` branch.
+
+For a fixed, auditable, or offline installation, download the Release package and checksum first:
 
 ~~~sh
 curl -fLO https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/dsh-code-ide-0.1.0-alpha.0.tgz
@@ -101,13 +103,13 @@ corepack pnpm dsh --profile web --dump-config
 corepack pnpm dsh web
 ~~~
 
-This is a development workflow, not the prerelease installation path. To follow the rolling `main` branch instead, run:
+This is a development workflow, not the recommended GitHub installation path. To install the prebuilt `main` branch without a local checkout, run:
 
 ~~~sh
 corepack pnpm dsh plugin --profile web add github:SakalioLabs/dsh-code-ide
 ~~~
 
-Git dependencies run `prepare` during installation. If pnpm reports `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`, merge only the complete exact key printed by pnpm into the existing `allowBuilds` map in `$DSH_HOME/profiles/web/pnpm-workspace.yaml`, then rerun the command. Never disable the policy or add a broad allow-rule. A `#<commit>` suffix can pin a Git source, but release users should prefer the prebuilt tarball above.
+The repository contains CI-verified prebuilt `dist/` output and no install-time build script, so this command needs no `allowBuilds` entry. Use the fixed Release package and its checksum above when reproducibility or verification matters.
 
 ## Configuration
 
@@ -196,11 +198,11 @@ The project is under the [MIT License](LICENSE), copyright © 2026 SakalioLabs. 
 
 ## Update and uninstall
 
-Stop Harness, remove the old entry, then add the fixed prerelease again:
+Stop Harness, then add the current `main` build again. Use a newer fixed Release URL instead if you follow verified releases:
 
 ~~~sh
 corepack pnpm dsh plugin --profile web remove dsh-code-ide
-corepack pnpm dsh plugin --profile web add https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/dsh-code-ide-0.1.0-alpha.0.tgz
+corepack pnpm dsh plugin --profile web add github:SakalioLabs/dsh-code-ide
 corepack pnpm dsh plugin --profile web list --depth 0
 corepack pnpm dsh --profile web --dump-config
 ~~~

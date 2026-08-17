@@ -67,7 +67,6 @@
     "clean": "rimraf dist coverage .cache",
     "build:harness-client": "vite build --config vite.harness-client.config.ts",
     "dev": "vite",
-    "prepare": "pnpm run build",
     "typecheck": "tsc -p tsconfig.host.json --noEmit && tsc -p tsconfig.client.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
