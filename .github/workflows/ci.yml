@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-15, macos-15-intel, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -27,9 +27,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm test
+      - name: Verify Linux structural mutation backend
+        if: runner.os == 'Linux'
+        run: pnpm vitest run tests/host/mutation-backend-linux.spec.ts --reporter=verbose
+      - name: Verify macOS structural mutation backend
+        if: runner.os == 'macOS'
+        run: pnpm vitest run tests/host/mutation-backend-darwin.spec.ts --reporter=verbose
       - run: pnpm build
       - name: Verify committed distribution
-        if: runner.os == 'Linux'
+        if: matrix.os == 'ubuntu-latest'
         shell: bash
         run: |
           set -euo pipefail

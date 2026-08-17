@@ -2,6 +2,10 @@
 
 [简体中文](README_zh-CN.md) | [English](README_en.md) | [日本語](README_ja.md) | **Deutsch**
 
+<p align="center">
+  <img src="docs/assets/dsh-code-ide-demo.png" alt="dsh-code-ide in DeepSeek Harness mit Dateiexplorer, Code-Editor und Terminal in einer browserbasierten IDE-Arbeitsoberfläche" width="100%" />
+</p>
+
 `dsh-code-ide` ergänzt [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) um eine optionale IDE-Arbeitsoberfläche. Startseite, Chat, Sitzungen, Einstellungen und Werkzeugoberflächen von Harness bleiben unverändert erhalten.
 
 > [!IMPORTANT]
@@ -22,6 +26,7 @@ Die Bedienstruktur orientiert sich an bekannten VS-Code-Konventionen. Das Projek
 ## Funktionsübersicht
 
 - Begrenzter, verzögert geladener Explorer mit Dateisymbolen, erhaltenem Aufklappzustand, barrierearmer Tastatursteuerung und geprüften arbeitsbereichsrelativen Pfaden.
+- Vollständige Unterstützung für Anlegen, Verschieben/Umbenennen und endgültiges Löschen in lokalen NTFS-Arbeitsbereichen unter Windows x64. Linux-Hosts mit erfolgreicher `openat2`-Laufzeitprüfung sowie lokale APFS-Arbeitsbereiche unter macOS x64/arm64 mit erfolgreicher `libSystem`-Laufzeitprüfung unterstützen nur das Anlegen von Dateien und Ordnern.
 - CodeMirror-6-Editor mit 20 Sprachmodi, mehreren Reitern, bis zu vier Editorgruppen, Teilung nach oben oder rechts, Drag-and-drop-/Tastatur-Sortierung, dokumentbezogenem Undo sowie Zeilenenden-, Einrückungs- und Umbruchsteuerung.
 - Versionsbewusstes Speichern und Konfliktbehandlung, Wiederherstellung gelöschter Dateien, browserlokale Hot-Exit-Wiederherstellung und Abfrage externer Änderungen.
 - Quick Open, Arbeitsbereichssuche, reguläre Ausdrücke, Groß-/Kleinschreibung, Ganzwort- und include/exclude-Filter sowie Vorschau vor Ersetzungen. Ersetzungen ändern Puffer, speichern aber nicht automatisch.
@@ -168,7 +173,7 @@ Der Explorer nutzt Pfeiltasten, Pos1/Ende, Enter, Leertaste, `*` und Zeichensuch
 ## Einschränkungen und Sicherheit
 
 - Frühes, an einen Quellstand gebundenes lokales Werkzeug. Andere Harness-Commits, bewegliche Branches und Registry-RCs sind bis zur Prüfung nicht unterstützt.
-- Unter Windows x64 unterstützt der aktuelle Host in lokalen NTFS-Arbeitsbereichen das Anlegen von Dateien und Ordnern, Verschieben/Umbenennen sowie endgültiges Löschen. Auf anderen Plattformen oder nicht unterstützten Dateisystemen sind diese Operationen nicht verfügbar. Endgültiges Löschen verwendet nicht den Papierkorb; Zielpfad und Wiederherstellungsstatus vor der Bestätigung prüfen.
+- Windows x64 verwendet in lokalen NTFS-Arbeitsbereichen eine starke Handle-Eingrenzung (handle containment) und unterstützt das Anlegen von Dateien und Ordnern, Verschieben/Umbenennen sowie endgültiges Löschen vollständig. Linux unterstützt das Anlegen von Dateien und Ordnern nur nach erfolgreicher `openat2`-Laufzeitprüfung. macOS x64/arm64 unterstützt das Anlegen von Dateien und Ordnern nur in lokalen APFS-Arbeitsbereichen nach erfolgreicher `libSystem`-Laufzeitprüfung. Verschieben, Umbenennen und Löschen bleiben unter Linux und macOS deaktiviert. Deren trusted-local-`dirfd`-Stufe schützt nur vor Pfad-Traversal aus Browseranfragen, vorhandenen oder konkurrierenden symbolischen Links und Mount-Grenzüberschreitungen; sie widersteht keinem aktiven lokalen Prozess mit derselben UID, der rename/reparent ausführt. Fehlgeschlagene Prüfungen führen zu fail-closed; ein unbestimmtes Ergebnis nach dem Commit wird zu `recoveryRequired` oder fail-closed. Durchsuchen, Bearbeiten, Speichern, Suche und Terminals bleiben verfügbar. Endgültiges Löschen unter Windows verwendet nicht den Papierkorb; Zielpfad und Wiederherstellungsstatus vor der Bestätigung prüfen.
 - Keine VS-Code-Erweiterungen, kein Extension Host, keine LSP-Vervollständigung, kein Debugger, keine Versionsverwaltungsoberfläche, kein Binäreditor und kein Multi-Root.
 - IDE-Endpunkte verlangen Loopback und passenden Origin. Dieses MVP nicht im LAN oder Internet bereitstellen; Remote-Authentifizierung, TLS, Prozessisolation, Quoten und Audit-Logs fehlen.
 - Pfadprüfung verhindert Traversal und beobachtete Symlinks, ist aber keine OS-Sandbox gegen andere Prozesse desselben Benutzers.

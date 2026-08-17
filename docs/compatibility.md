@@ -13,22 +13,28 @@ Runtime requirements:
 | Harness profile | Web profile with a registered local workspace |
 | Browser origin | The same loopback origin that serves Harness |
 
-CI currently runs type checking, unit tests, builds, and package creation on `windows-latest` and `ubuntu-latest` with Node `22.19.0`.
+CI runs type checking, unit tests, builds, and package creation on Windows x64, Ubuntu x64/ARM64, and macOS 15 x64/ARM64 with Node `22.19.0`. Linux and macOS also run their platform backend test directly, so a native probe that silently falls back to the unavailable backend fails CI.
 
 ## Host platform matrix
 
 | Capability | Windows x64 + NTFS | Linux | macOS |
 | --- | --- | --- | --- |
-| Browse, inspect, and read | Yes | Yes | Expected, not in the current CI matrix |
-| Edit and versioned save | Yes | Yes | Expected, not in the current CI matrix |
-| File and text search | Yes | Yes | Expected when the bundled ripgrep package is available |
-| Integrated terminal | Yes | Yes | Expected when `node-pty` builds and a shell is available |
-| Create file/folder | Yes, after native probe | No | No |
-| Rename/move/delete | Yes, after native probe | No | No |
+| Browse, inspect, and read | Yes | Yes | Yes |
+| Edit and versioned save | Yes | Yes | Yes |
+| File and text search | Yes | Yes | Yes, when the bundled ripgrep package is available |
+| Integrated terminal | Yes | Yes | Yes, when `node-pty` and a shell are available |
+| Create file/folder | Yes, after NTFS native probe | Yes, after `openat2` native probe | Yes, after local-APFS native probe |
+| Rename/move/delete | Yes, after NTFS native probe | No | No |
 
-Structural operations are deliberately fail-closed. The current production backend is enabled only on Windows x64 when the workspace volume reports NTFS and a startup runtime witness proves handle-relative create, no-replace rename, deletion, identity, and reparse-point behavior. Windows ARM64, non-NTFS workspaces, failed native loading, or a failed witness advertise all structural mutation capabilities as unavailable.
+Structural operations are deliberately fail-closed and each backend is enabled only after its native ABI and containment witness pass at runtime:
 
-Linux and macOS currently use the all-false structural mutation backend. They can still browse, edit, save, search, and use terminals; Explorer create, move, rename, and delete controls must remain unavailable. A tested utility for native no-replace rename is not the production containment backend and does not change this matrix.
+- Windows requires x64, NTFS, and the handle-relative NT runtime witness. Windows ARM64 and non-NTFS workspaces remain unavailable.
+- Linux requires the `openat2` containment flags, descriptor identity binding, the native FFI ABI, and its no-replace create witness. Rename and delete remain unavailable until their complete commit and recursive-cleanup contracts are proven.
+- macOS requires x64 or arm64, a local APFS workspace, fixed-signature root/reserved-staging descriptor acquisition, the libSystem ABI, root-descriptor-relative no-follow publication, and a no-replace create witness. Rename and delete remain unavailable until their complete commit and recursive-cleanup contracts are proven.
+
+An unsupported platform, unsupported filesystem, failed native load, missing primitive, or failed witness returns the all-false backend. Browse, edit, versioned save, search, and terminal capabilities remain independent of this structural backend.
+
+Windows uses the strong `backend-owned-handle-relative-v1` confinement tier. Linux and macOS use `trusted-local-dirfd-relative-v1`, which is designed for Harness' single trusted local user: it rejects browser path traversal, symlinks, and mount crossing, but it is not an OS sandbox and does not promise to defeat another process running as the same user that actively reparents directories during a mutation. Detected final-state uncertainty is reported as recovery-required and disables further structural operations for that workspace.
 
 ## Filesystem behavior
 

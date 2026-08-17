@@ -24,8 +24,11 @@ export interface MutationBackendDescriptor {
   readonly implementation:
     | 'unavailable'
     | 'windows-nt-handles'
-    | 'linux-landlock-helper'
-  readonly confinement: 'backend-owned-handle-relative-v1'
+    | 'linux-openat2-handles'
+    | 'darwin-openat-handles'
+  readonly confinement:
+    | 'backend-owned-handle-relative-v1'
+    | 'trusted-local-dirfd-relative-v1'
   readonly capabilities: Readonly<MutationBackendCapabilities>
 }
 
@@ -34,10 +37,17 @@ export interface MutationBackendDescriptor {
  * pathname. A backend remains a security boundary and must validate every
  * segment again before using it. A mutation backend never turns an operation
  * path into an ambient OS pathname for authority or commit: every
- * authority-bearing lookup and namespace-changing call stays relative to a
- * backend-owned, identity-verified directory handle. A read-only ambient
- * observation may be used only as commit evidence after it is tied back to
- * the already-open native handle's exact identity; it never selects a target.
+ * authority-bearing lookup and namespace-changing call follows the
+ * descriptor's confinement tier. The strongest tier stays relative to an
+ * identity-verified root handle throughout; the trusted-local POSIX tier may
+ * use a verified descendant dirfd under its documented same-user race limit.
+ * That tier may also create a Host-random, reserved staging name immediately
+ * below a verified canonical root, bind its open fd back to the named object,
+ * and then publish it relative to the pinned root fd. A browser-selected
+ * target is never resolved through an ambient pathname.
+ * A read-only ambient observation may be used only as commit evidence after
+ * it is tied back to the already-open native handle's exact identity; it never
+ * selects a target.
  */
 export interface MutationBackendPath {
   readonly segments: readonly string[]
@@ -151,8 +161,10 @@ export interface MutationBackendWorkspace {
 export interface OpenMutationBackendWorkspace {
   readonly workspaceId: string
   /**
-   * The sole ambient pathname admitted by this ABI. It is used only to open
-   * and pin the registered root. No operation path may be resolved from it.
+   * The sole ambient pathname admitted by this ABI. It opens and pins the
+   * registered root. No browser-selected operation path may be resolved from
+   * it. The trusted-local tier may additionally use it for a Host-random root
+   * staging name that is bound to an open fd before root-fd-relative publish.
    */
   readonly registeredRoot: string
   /** Identity captured by WorkspaceResources immediately before open. */
@@ -166,10 +178,13 @@ export interface OpenMutationBackendWorkspace {
 /**
  * A capability-bearing native backend.
  *
- * A true capability means the complete operation is proven: root binding,
- * segment traversal, no-replace commit, same-object verification, mount or
- * reparse-point exclusion, and any recursive-delete quarantine/purge. Partial
- * primitive availability must remain false.
+ * `backend-owned-handle-relative-v1` is the strongest tier: a true capability
+ * proves root binding, traversal, commit-object identity, mount/reparse
+ * exclusion and any recursive cleanup. `trusted-local-dirfd-relative-v1`
+ * remains confined against browser-supplied traversal and symlinks, but is
+ * explicitly scoped to this product's single trusted local-user model: POSIX
+ * does not promise to defeat a separate same-UID process racing namespace
+ * reparenting. Partial primitive availability must remain false in both tiers.
  */
 export interface MutationBackend {
   readonly descriptor: Readonly<MutationBackendDescriptor>

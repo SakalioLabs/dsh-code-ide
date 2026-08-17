@@ -1,6 +1,13 @@
 import { type WorkspaceMutationBackendProviderContext } from './capabilities.js';
 import { type MutationBackend } from './mutation-backend.js';
 export type MutationBackendFactory = () => MutationBackend | Promise<MutationBackend>;
+export interface PlatformMutationBackendFactories {
+    readonly win32: MutationBackendFactory;
+    readonly linux: MutationBackendFactory;
+    readonly darwin: MutationBackendFactory;
+}
+/** Select exactly one platform backend and fail closed on load or probe errors. */
+export declare function createPlatformMutationBackend(platform?: NodeJS.Platform, factories?: PlatformMutationBackendFactories): Promise<MutationBackend>;
 /**
  * Owns the native containment boundary as an independent reversible effect.
  * Platform implementations replace only this factory; the receipt service

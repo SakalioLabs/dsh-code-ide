@@ -2,6 +2,10 @@
 
 [简体中文](README_zh-CN.md) | [English](README_en.md) | **日本語** | [Deutsch](README_de.md)
 
+<p align="center">
+  <img src="docs/assets/dsh-code-ide-demo.png" alt="dsh-code-ide のデモ：DeepSeek Harness のセッションに、エクスプローラー、コードエディター、ターミナルを備えたブラウザ IDE ワークベンチを表示" width="100%" />
+</p>
+
 `dsh-code-ide` は、[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) に任意で利用できる IDE ワークベンチを追加するプラグインです。公式のホーム、チャット、セッション、設定、ツール UI は置き換えません。
 
 > [!IMPORTANT]
@@ -22,6 +26,7 @@
 ## 主な機能
 
 - 遅延読み込み式の Explorer、ファイルアイコン、展開状態の保持、キーボード操作、ワークスペース相対パスの検証。
+- Windows x64 のローカル NTFS ワークスペースでは、作成、移動／名前変更、完全削除をすべてサポートします。実行時 `openat2` プローブに成功した Linux Host と、実行時 `libSystem` プローブに成功した macOS x64/arm64 のローカル APFS ワークスペースでは、ファイル／フォルダーの作成のみをサポートします。
 - CodeMirror 6 による 20 言語モード、複数タブ、最大 4 グループ、上／右方向への分割、タブのドラッグ／キーボード並べ替え、文書別 Undo、改行・インデント・折り返し設定。
 - バージョン確認付き保存、競合処理、削除済みファイルの再作成、ブラウザー内ホットイグジット復元、外部変更のポーリング。
 - Quick Open、ワークスペース検索、正規表現・大文字小文字・単語・include/exclude、結果移動、プレビュー後に適用する置換。置換後のバッファーは自動保存されません。
@@ -168,7 +173,7 @@ Explorer は矢印、Home/End、Enter、Space、`*`、文字入力検索に対�
 ## 制限とセキュリティ
 
 - 不安定な上流へ固定した初期段階のローカル開発ツールです。他コミットや移動ブランチ、別 RC は未サポートです。
-- Windows x64 のローカル NTFS ワークスペースでは、現在の Host がファイル／フォルダー作成、移動／名前変更、完全削除をサポートします。他 OS または未対応ファイルシステムでは利用できません。完全削除はごみ箱を使わないため、確定前に対象パスと recovery 状態を確認してください。
+- Windows x64 はローカル NTFS ワークスペースで強力なハンドル封じ込め（handle containment）を使用し、ファイル／フォルダー作成、移動／名前変更、完全削除をすべてサポートします。Linux は実行時 `openat2` プローブに成功した場合のみ、macOS x64/arm64 はローカル APFS ワークスペースで実行時 `libSystem` プローブに成功した場合のみ、ファイル／フォルダー作成をサポートします。Linux／macOS では移動、名前変更、削除は引き続き無効です。両者の trusted-local `dirfd` 階層が防御するのは、ブラウザー要求によるパストラバーサル、既存または競合するシンボリックリンク、マウント越境だけであり、同一 UID のローカルプロセスが能動的に行う rename/reparent には対抗しません。プローブ失敗時は fail-closed とし、コミット後の結果が不確定な場合は `recoveryRequired` または fail-closed になります。閲覧、編集、保存、検索、端末は引き続き利用できます。Windows の完全削除はごみ箱を使わないため、確定前に対象パスと recovery 状態を確認してください。
 - VS Code 拡張、拡張ホスト、LSP 補完、デバッガー、ソース管理 UI、バイナリエディター、マルチルートには対応しません。
 - IDE endpoint は loopback と同一オリジンを要求します。LAN や Internet へ公開しないでください。遠隔ユーザー認証、TLS、プロセス分離、quota、監査ログはありません。
 - パス検証は traversal と確認済み symlink を拒否しますが、同一ユーザーの別プロセスに対する OS sandbox ではありません。

@@ -2,6 +2,10 @@
 
 **简体中文** · [English](README_en.md) · [日本語](README_ja.md) · [Deutsch](README_de.md)
 
+<p align="center">
+  <img src="docs/assets/dsh-code-ide-demo.png" alt="dsh-code-ide 演示：在 DeepSeek Harness 会话中显示资源管理器、代码编辑器和终端的浏览器 IDE 工作台" width="100%" />
+</p>
+
 `dsh-code-ide` 以可选插件的方式，为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 增加一个浏览器 IDE 工作台。它不会替换 Harness 首页、对话、会话、设置或工具界面。
 
 > [!IMPORTANT]
@@ -47,7 +51,7 @@ IDE 由同源路由 `/dsh-code-ide/` 提供，并嵌入官方会话区域。父�
 ## 主要功能
 
 - **资源管理器**：有界懒加载、Seti 风格文件图标、键盘导航、展开状态保留、工作区相对路径校验。
-- **文件操作**：Windows x64 的本地 NTFS 工作区支持新建文件/目录、拖放移动、重命名和永久删除；操作经过原生句柄相对后端、版本检查与恢复流程。Linux/macOS 目前只支持读取、编辑和保存，不开放结构性操作。
+- **文件操作**：Windows x64 的本地 NTFS 工作区支持新建文件/目录、拖放移动、重命名和永久删除。通过运行时 `openat2` 探针的 Linux Host，以及通过运行时 `libSystem` 探针的 macOS x64/arm64 本地 APFS 工作区，支持新建文件和目录；移动、重命名和删除仍保持禁用。
 - **编辑器**：CodeMirror 6、多标签、拖拽/键盘排序、最多 4 个编辑器分组、每文档独立撤销/选择/滚动状态、自动换行、缩进、行尾和语言模式。
 - **语法高亮**：内置并按需加载 Plain Text、JavaScript、JSX、TypeScript、TSX、JSON、CSS/SCSS/Less、HTML、Markdown、Python、C、C++、Java、Go、Rust、Shell、PowerShell、YAML、XML 和 SQL。
 - **保存与恢复**：版本感知保存、外部变化检测、冲突处理、删除文件重建、脏标签关闭确认，以及浏览器本地的有界 hot-exit 恢复。
@@ -216,7 +220,7 @@ pnpm dsh plugin --profile web remove dsh-code-ide
 ## 安全边界与已知限制
 
 - 仅面向本机、同源 loopback 使用。当前没有远程用户认证、TLS、进程隔离、配额或完整审计日志，不要直接暴露到局域网或互联网。
-- Windows x64 的本地 NTFS 结构性文件操作使用原生句柄相对后端并执行路径、版本和恢复检查；Linux/macOS 当前返回不可用。它是工作区约束，不是操作系统沙箱，也不能阻止同一用户的其他进程竞争文件。
+- Windows x64 的本地 NTFS 工作区使用强句柄约束（handle containment），完整支持新建文件/目录、移动/重命名和永久删除。Linux 仅在运行时 `openat2` 探针通过后支持新建文件/目录；macOS x64/arm64 仅在本地 APFS 工作区且运行时 `libSystem` 探针通过后支持新建文件/目录。Linux/macOS 的移动、重命名和删除仍禁用，其 trusted-local `dirfd` 层级只防御来自浏览器请求的路径穿越、已有或竞争性符号链接以及跨挂载访问，不抵御同 UID 本地进程主动执行 rename/reparent。探针失败时结构性操作会安全关闭；提交后结果无法确定时会进入 `recoveryRequired` 或安全关闭。浏览、编辑、保存、搜索和终端不受影响。这些保护是工作区约束，不是操作系统沙箱。
 - 保存是版本感知流程，但不是跨进程原子 CAS。
 - IDE 终端以运行 Harness 的操作系统用户权限执行，**不是沙箱**。环境变量只做有限敏感名称过滤。
 - hot-exit、快捷键和部分恢复信息会以同源 `localStorage` 明文保存；同源代码可以访问这些数据。

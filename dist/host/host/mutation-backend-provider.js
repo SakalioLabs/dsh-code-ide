@@ -1,9 +1,30 @@
 import { WORKSPACE_MUTATION_BACKEND_CAPABILITY, } from './capabilities.js';
 import { createUnavailableMutationBackend } from './mutation-backend.js';
-function createPlatformMutationBackend() {
-    if (process.platform !== 'win32')
+const PLATFORM_BACKEND_FACTORIES = Object.freeze({
+    win32: async () => await import('./mutation-backend-windows.js')
+        .then(async (module) => await module.createWindowsMutationBackend()),
+    linux: async () => await import('./mutation-backend-linux.js')
+        .then(async (module) => await module.createLinuxMutationBackend()),
+    darwin: async () => await import('./mutation-backend-darwin.js')
+        .then(async (module) => await module.createDarwinMutationBackend()),
+});
+/** Select exactly one platform backend and fail closed on load or probe errors. */
+export async function createPlatformMutationBackend(platform = process.platform, factories = PLATFORM_BACKEND_FACTORIES) {
+    const factory = platform === 'win32'
+        ? factories.win32
+        : platform === 'linux'
+            ? factories.linux
+            : platform === 'darwin'
+                ? factories.darwin
+                : undefined;
+    if (factory === undefined)
         return createUnavailableMutationBackend();
-    return import('./mutation-backend-windows.js').then(async (module) => await module.createWindowsMutationBackend(), () => createUnavailableMutationBackend());
+    try {
+        return await factory();
+    }
+    catch {
+        return createUnavailableMutationBackend();
+    }
 }
 function isPromiseLike(value) {
     return typeof value === 'object' && value !== null && 'then' in value;
@@ -13,6 +34,9 @@ function inactiveEffect(error) {
         && 'code' in error && error.code === 'INACTIVE_EFFECT';
 }
 async function installBackend(ctx, backend) {
+    if (backend.descriptor.implementation === 'unavailable') {
+        ctx.logger.warn('dsh-code-ide: structural mutation backend unavailable (%s, platform=%s, arch=%s)', 'WORKSPACE_MUTATION_BACKEND_UNAVAILABLE', process.platform, process.arch);
+    }
     try {
         ctx.effect(() => {
             const withdraw = ctx.provide(WORKSPACE_MUTATION_BACKEND_CAPABILITY, backend);

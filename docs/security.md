@@ -22,10 +22,21 @@ The Host never accepts a browser-supplied absolute filesystem path. It resolves 
 - canonical root identity (`dev`/`ino`) pinned for the provider epoch and revalidated on use;
 - slash-separated relative paths only, with no empty, `.`, `..`, absolute, backslash, control-character, reserved-device, or Host-reserved segments;
 - no symbolic links or reparse points in traversed workspace paths;
-- no path that resolves outside the registered root;
+- no browser-selected path that resolves outside the registered root under the backend's documented threat model;
 - no cross-device or nested mount traversal where containment cannot be proven.
 
-On Windows x64, structural mutations are exposed only after the NTFS handle-relative backend passes a runtime witness. Authority-bearing traversal and namespace changes remain relative to backend-owned, identity-verified handles. Unsupported platforms or any probe failure advertise all structural capabilities as false.
+Structural mutations are exposed only after a platform backend passes its runtime containment witness. The descriptor reports one of two confinement tiers:
+
+- `backend-owned-handle-relative-v1` is the strong Windows tier. Authority-bearing traversal and namespace changes remain relative to backend-owned, identity-verified handles.
+- `trusted-local-dirfd-relative-v1` is the POSIX tier for this project's single-trusted-local-user model. It rejects browser path traversal, existing or raced symbolic-link traversal, and cross-device/mount traversal, then verifies the resulting identity. On macOS it may create a Host-random reserved staging name directly beneath the verified canonical root, bind the open fd to that named object, and publish it relative to the pinned root fd; a browser-selected target is never opened by an ambient pathname. The tier does **not** claim to withstand a separate process running as the same OS user that actively reparents an already opened ancestor directory during the operation. Such an adversarial race can make the final location uncertain; the backend reports `recoveryRequired` and poisons that workspace when uncertainty is detected.
+
+Platform implementations are deliberately asymmetric:
+
+- Windows x64 uses the NTFS handle-relative backend and excludes reparse points.
+- Linux uses `openat2` with beneath, no-symlink, no-magic-link, and no-cross-device resolution constraints, plus descriptor-relative no-replace creation and post-commit identity verification. Its rename and delete capabilities remain false.
+- macOS x64/arm64 uses a pinned root descriptor on a local APFS volume, fixed-signature Node filesystem calls for root and reserved-staging descriptor acquisition, and no-replace/no-follow `renameatx_np` publication with post-commit identity verification. Its rename and delete capabilities remain false.
+
+The provider loads only the backend matching the Host platform. An unsupported filesystem or architecture, missing native primitive, dynamic-load failure, or failed witness installs the all-false backend; it never promotes an unproven operation.
 
 ## Reads and saves
 
