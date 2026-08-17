@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { lstat, mkdir, mkdtemp, readFile, readdir, rename, rm, symlink, unlink, utimes, writeFile } from 'node:fs/promises'
+import { chmod, lstat, mkdir, mkdtemp, readFile, readdir, rename, rm, symlink, unlink, utimes, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -336,8 +336,12 @@ describe('WorkspaceMutationService', () => {
     service = createService({}, {
       afterNativeCommit: async (kind, destination) => {
         if (kind !== 'rename') return
-        await writeFile(destination, 'BBBB')
-        await utimes(destination, stamp, stamp)
+        const committed = await lstat(destination, { bigint: true })
+        const replacement = join(dirname(destination), `replacement-${randomUUID()}`)
+        await writeFile(replacement, 'BBBB')
+        await chmod(replacement, Number(committed.mode & 0o7777n))
+        await utimes(replacement, stamp, stamp)
+        await rename(replacement, destination)
       },
     })
     await writeFile(join(root, 'source.txt'), 'AAAA')
@@ -349,6 +353,8 @@ describe('WorkspaceMutationService', () => {
     })) as MutationReceipt
     expect(receipt).toMatchObject({ state: 'recoveryRequired', error: { code: 'MUTATION_RECOVERY_REQUIRED' } })
     expect(await readFile(join(root, 'destination.txt'), 'utf8')).toBe('BBBB')
+    const replacement = await lstat(join(root, 'destination.txt'), { bigint: true })
+    expect(replacement).toMatchObject({ size: info.size, mtimeNs: info.mtimeNs, mode: info.mode })
   })
 
   it('pins the directory created by mkdir before reporting a commit', async () => {
@@ -559,7 +565,8 @@ describe('WorkspaceMutationService', () => {
 
   it('keeps a committed receipt and adds a warning when deferred purge fails', async () => {
     await service.dispose()
-    service = createService({ receiptTtlMs: 50, maxPurgeJobs: 1 })
+    let now = 0
+    service = createService({ receiptTtlMs: 50, maxPurgeJobs: 1 }, { now: () => now })
     await writeFile(join(root, 'deleted.txt'), 'deleted')
     const info = await lstat(join(root, 'deleted.txt'), { bigint: true })
     const operationId = randomUUID()
@@ -569,10 +576,12 @@ describe('WorkspaceMutationService', () => {
     const quarantine = (await readdir(root)).find(name => name.startsWith('.__dsh_code_ide_quarantine_'))
     expect(quarantine).toBeTypeOf('string')
     await rm(join(root, quarantine!), { recursive: true, force: true })
-    await new Promise(resolve => setTimeout(resolve, 80))
-    expect(await service.request({ op: 'status', providerEpoch: service.providerEpoch, operationId })).toMatchObject({
-      state: 'committed', warning: { code: 'PURGE_DEFERRED' },
-    })
+    now = 50
+    await vi.waitFor(async () => {
+      expect(await service.request({ op: 'status', providerEpoch: service.providerEpoch, operationId })).toMatchObject({
+        state: 'committed', warning: { code: 'PURGE_DEFERRED' },
+      })
+    }, { timeout: 2_000 })
     await writeFile(join(root, 'capacity.txt'), 'retained')
     const retained = await lstat(join(root, 'capacity.txt'), { bigint: true })
     await expectCode(service.request(body({
