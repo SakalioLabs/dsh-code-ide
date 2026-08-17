@@ -5,11 +5,11 @@
 `dsh-code-ide` は、[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) に任意で利用できる IDE ワークベンチを追加するプラグインです。公式のホーム、チャット、セッション、設定、ツール UI は置き換えません。
 
 > [!IMPORTANT]
-> 現在のバージョンは `0.1.0-alpha.0` です。正式リリースおよび npm パッケージはまだ公開されていません。開発対象は DeepSeek Harness のソースコミット `47f9438`（マニフェスト上は `0.1.0-rc.5`）に固定されています。
+> `v0.1.0-alpha.0` は、ビルド済みプラグインを提供する GitHub **プレリリース**です。npm には公開していません。互換性の基準は引き続き DeepSeek Harness のソースコミット `47f9438`（マニフェスト上は `0.1.0-rc.5`）です。
 
 > 安全確認付きの中国語インストール支援プロンプトは、[クイックインストール](README.md#快速安装推荐) を参照してください。以下の手順は検証可能な手動フォールバックです。
 
-> **クイックショートカット:** `dsh plugin --profile web add github:SakalioLabs/dsh-code-ide`。Harness のソース checkout では代わりに `pnpm dsh` を使います。pnpm が `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED` を出した場合は、表示された正確な key を `$DSH_HOME/profiles/web/pnpm-workspace.yaml` の既存 `allowBuilds` に統合してから再実行してください。
+> **クイックインストール:** `dsh plugin --profile web add https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/dsh-code-ide-0.1.0-alpha.0.tgz`。Harness のソース checkout では `dsh` の代わりに `pnpm dsh` を使います。プレリリースの `.tgz` にはビルド済み成果物が含まれ、インストール時に本プラグインの `prepare` は実行されないため、`dsh-code-ide` 用の `allowBuilds` は不要です。
 
 ## 概要
 
@@ -42,7 +42,7 @@
 
 npm では現在 `@deepseek-ai/dsh@0.1.0-rc.6` が公開されていますが、本 alpha はこのリリースでエンドツーエンド検証されていません。したがって、本プロジェクトが保証するインストール基準ではありません。
 
-## ローカル `.tgz` からインストール
+## GitHub プレリリースからインストール（推奨）
 
 1 つのインストールでは、`plugin add`、`plugin list`、`--dump-config`、`web` のすべてで同じ `DSH_HOME` を使用してください。明示的に設定する場合は、次のコマンドを実行する前に同じシェルで一度だけ export します。別の値を使うと、別の profile ストアが選ばれます。
 
@@ -56,23 +56,33 @@ corepack pnpm install --frozen-lockfile
 corepack pnpm build
 ~~~
 
-別のチェックアウトで本プロジェクトをパックします。
+Harness の checkout から固定プレリリースを直接インストールします。
 
 ~~~sh
-git clone https://github.com/SakalioLabs/dsh-code-ide.git
-cd dsh-code-ide
-corepack pnpm install --frozen-lockfile
-corepack pnpm build
-corepack pnpm pack
-~~~
-
-Harness 側から生成された tarball の絶対パスを指定します。
-
-~~~sh
-corepack pnpm dsh plugin --profile web add /absolute/path/to/dsh-code-ide-0.1.0-alpha.0.tgz
-corepack pnpm dsh plugin --profile web list
+corepack pnpm dsh plugin --profile web add https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/dsh-code-ide-0.1.0-alpha.0.tgz
+corepack pnpm dsh plugin --profile web list --depth 0
 corepack pnpm dsh --profile web --dump-config
 corepack pnpm dsh web
+~~~
+
+監査可能なインストールやオフライン保管には、パッケージとチェックサムを先にダウンロードします。
+
+~~~sh
+curl -fLO https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/dsh-code-ide-0.1.0-alpha.0.tgz
+curl -fLO https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/dsh-code-ide-0.1.0-alpha.0.tgz.sha256
+sha256sum -c dsh-code-ide-0.1.0-alpha.0.tgz.sha256
+corepack pnpm dsh plugin --profile web add /absolute/path/to/dsh-code-ide-0.1.0-alpha.0.tgz
+~~~
+
+Windows PowerShell での検証：
+
+~~~powershell
+$asset = "dsh-code-ide-0.1.0-alpha.0.tgz"
+Invoke-WebRequest "https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/$asset" -OutFile $asset
+Invoke-WebRequest "https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/$asset.sha256" -OutFile "$asset.sha256"
+$expected = (Get-Content "$asset.sha256").Split()[0].ToUpperInvariant()
+$actual = (Get-FileHash $asset -Algorithm SHA256).Hash
+if ($actual -ne $expected) { throw "SHA-256 mismatch" }
 ~~~
 
 ## ローカルソースからインストール
@@ -89,7 +99,13 @@ corepack pnpm dsh --profile web --dump-config
 corepack pnpm dsh web
 ~~~
 
-これは開発用の手順であり、公開インストールの保証ではありません。`strictDepBuilds` が Git 依存のビルドを止めた場合は、生成された正確なパッケージキーだけを確認して許可し、ポリシー全体を無効化しないでください。
+これは開発用の手順であり、プレリリースの推奨インストール経路ではありません。移動する `main` ブランチを追従する場合だけ、次を使います。
+
+~~~sh
+corepack pnpm dsh plugin --profile web add github:SakalioLabs/dsh-code-ide
+~~~
+
+Git 依存はインストール時に `prepare` を実行します。pnpm が `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED` を出した場合は、pnpm が表示した完全かつ正確な key だけを `$DSH_HOME/profiles/web/pnpm-workspace.yaml` の既存 `allowBuilds` に統合して再実行してください。ポリシー全体を無効化したり、広範な許可を追加したりしないでください。Git spec の末尾に `#<commit>` を付ければ固定できますが、リリース利用者は上のビルド済み `.tgz` を優先してください。
 
 ## 設定
 
@@ -178,12 +194,12 @@ corepack pnpm build
 
 ## 更新とアンインストール
 
-Harness を停止し、新しい tarball へ入れ替えます。
+Harness を停止し、固定プレリリースを入れ直します。
 
 ~~~sh
 corepack pnpm dsh plugin --profile web remove dsh-code-ide
-corepack pnpm dsh plugin --profile web add /absolute/path/to/new/dsh-code-ide-0.1.0-alpha.0.tgz
-corepack pnpm dsh plugin --profile web list
+corepack pnpm dsh plugin --profile web add https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/dsh-code-ide-0.1.0-alpha.0.tgz
+corepack pnpm dsh plugin --profile web list --depth 0
 corepack pnpm dsh --profile web --dump-config
 ~~~
 
@@ -191,4 +207,4 @@ corepack pnpm dsh --profile web --dump-config
 
 ## リリースノート
 
-公開リリースはまだありません。現在の `0.1.0-alpha.0` は、上記の Harness 固定版に対するローカルソースまたは `.tgz` 評価用です。過去のテスト成果物はリリースではなく、現在のソースを証明するものでもありません。
+`v0.1.0-alpha.0` は GitHub プレリリースです。リリース資産は `dsh-code-ide-0.1.0-alpha.0.tgz` と対応する SHA-256 ファイルであり、npm リリースではありません。Release ページ上の資産だけが公開パッケージです。過去の Actions 成果物やローカル `tmp/` 出力は開発記録であり、互換範囲は上記の Harness 固定コミットに限定されます。

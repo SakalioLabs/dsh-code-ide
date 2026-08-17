@@ -5,11 +5,11 @@
 `dsh-code-ide` adds an optional IDE workbench to [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) without replacing its official home page, Chat view, sessions, settings, or tool UI.
 
 > [!IMPORTANT]
-> The project is currently `0.1.0-alpha.0` and has not been published as a release or supported npm package. Its development baseline is DeepSeek Harness source commit `47f9438` (`0.1.0-rc.5` manifests).
+> `v0.1.0-alpha.0` is a GitHub **prerelease** with a prebuilt plugin package; it is not published to npm. The compatibility baseline remains DeepSeek Harness source commit `47f9438` (`0.1.0-rc.5` manifests).
 
 > For the guarded, Chinese-first assisted-installation prompt, see [Quick install](README.md#快速安装推荐). The manual steps below remain the supported fallback.
 
-> **Quick shortcut:** `dsh plugin --profile web add github:SakalioLabs/dsh-code-ide`. In a Harness source checkout, use `pnpm dsh` instead. If pnpm reports `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`, merge the exact printed key into the existing `allowBuilds` map in `$DSH_HOME/profiles/web/pnpm-workspace.yaml`, then rerun the command.
+> **Quick install:** `dsh plugin --profile web add https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/dsh-code-ide-0.1.0-alpha.0.tgz`. In a Harness source checkout, use `pnpm dsh` instead of `dsh`. The prerelease tarball already contains the build output and does not run this plugin's `prepare` during installation, so it needs no `dsh-code-ide` `allowBuilds` entry.
 
 ## What it is
 
@@ -42,7 +42,7 @@ The UI follows familiar VS Code workbench conventions, but it is not Code - OSS 
 
 npm currently publishes `@deepseek-ai/dsh@0.1.0-rc.6`, but this alpha has not been end-to-end verified against that release. It is not this project's promised installation baseline.
 
-## Install from a local `.tgz`
+## Install the GitHub prerelease (recommended)
 
 Use the same `DSH_HOME` value for every Harness command in one installation: `plugin add`, `plugin list`, `--dump-config`, and `web`. If you set `DSH_HOME` explicitly, export it once in the shell before running the following commands; using another value later selects a different profile store.
 
@@ -56,23 +56,33 @@ corepack pnpm install --frozen-lockfile
 corepack pnpm build
 ~~~
 
-Build and pack this project:
+Install the fixed prerelease directly from the Harness checkout:
 
 ~~~sh
-git clone https://github.com/SakalioLabs/dsh-code-ide.git
-cd dsh-code-ide
-corepack pnpm install --frozen-lockfile
-corepack pnpm build
-corepack pnpm pack
-~~~
-
-Install the generated tarball from the Harness checkout:
-
-~~~sh
-corepack pnpm dsh plugin --profile web add /absolute/path/to/dsh-code-ide-0.1.0-alpha.0.tgz
-corepack pnpm dsh plugin --profile web list
+corepack pnpm dsh plugin --profile web add https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/dsh-code-ide-0.1.0-alpha.0.tgz
+corepack pnpm dsh plugin --profile web list --depth 0
 corepack pnpm dsh --profile web --dump-config
 corepack pnpm dsh web
+~~~
+
+For an auditable or offline installation, download the package and checksum first:
+
+~~~sh
+curl -fLO https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/dsh-code-ide-0.1.0-alpha.0.tgz
+curl -fLO https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/dsh-code-ide-0.1.0-alpha.0.tgz.sha256
+sha256sum -c dsh-code-ide-0.1.0-alpha.0.tgz.sha256
+corepack pnpm dsh plugin --profile web add /absolute/path/to/dsh-code-ide-0.1.0-alpha.0.tgz
+~~~
+
+Windows PowerShell checksum verification:
+
+~~~powershell
+$asset = "dsh-code-ide-0.1.0-alpha.0.tgz"
+Invoke-WebRequest "https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/$asset" -OutFile $asset
+Invoke-WebRequest "https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/$asset.sha256" -OutFile "$asset.sha256"
+$expected = (Get-Content "$asset.sha256").Split()[0].ToUpperInvariant()
+$actual = (Get-FileHash $asset -Algorithm SHA256).Hash
+if ($actual -ne $expected) { throw "SHA-256 mismatch" }
 ~~~
 
 ## Install from local source
@@ -91,7 +101,13 @@ corepack pnpm dsh --profile web --dump-config
 corepack pnpm dsh web
 ~~~
 
-This is a development workflow, not a published-install promise. If Harness `strictDepBuilds` stops a Git dependency build, approve only the exact generated package key; never disable the policy or add a broad allow-rule.
+This is a development workflow, not the prerelease installation path. To follow the rolling `main` branch instead, run:
+
+~~~sh
+corepack pnpm dsh plugin --profile web add github:SakalioLabs/dsh-code-ide
+~~~
+
+Git dependencies run `prepare` during installation. If pnpm reports `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`, merge only the complete exact key printed by pnpm into the existing `allowBuilds` map in `$DSH_HOME/profiles/web/pnpm-workspace.yaml`, then rerun the command. Never disable the policy or add a broad allow-rule. A `#<commit>` suffix can pin a Git source, but release users should prefer the prebuilt tarball above.
 
 ## Configuration
 
@@ -180,12 +196,12 @@ The project is under the [MIT License](LICENSE), copyright © 2026 SakalioLabs. 
 
 ## Update and uninstall
 
-Stop Harness, pack the new source, then replace the profile entry:
+Stop Harness, remove the old entry, then add the fixed prerelease again:
 
 ~~~sh
 corepack pnpm dsh plugin --profile web remove dsh-code-ide
-corepack pnpm dsh plugin --profile web add /absolute/path/to/new/dsh-code-ide-0.1.0-alpha.0.tgz
-corepack pnpm dsh plugin --profile web list
+corepack pnpm dsh plugin --profile web add https://github.com/SakalioLabs/dsh-code-ide/releases/download/v0.1.0-alpha.0/dsh-code-ide-0.1.0-alpha.0.tgz
+corepack pnpm dsh plugin --profile web list --depth 0
 corepack pnpm dsh --profile web --dump-config
 ~~~
 
@@ -193,4 +209,4 @@ Restart `pnpm dsh web` with the same `DSH_HOME` and hard-refresh. To uninstall p
 
 ## Release note
 
-No public release has been published. The current `0.1.0-alpha.0` source is for local source or `.tgz` evaluation against the exact Harness baseline above. Historical test artifacts are development records, not releases or evidence for the current tree.
+`v0.1.0-alpha.0` is a GitHub prerelease. Its release assets are `dsh-code-ide-0.1.0-alpha.0.tgz` and the matching SHA-256 file; it is not an npm release. Only assets on that Release page are release packages. Historical Actions artifacts and local `tmp/` output remain development records, and compatibility is limited to the pinned Harness baseline above.

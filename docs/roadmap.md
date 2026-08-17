@@ -12,6 +12,7 @@ This roadmap describes direction, not a compatibility promise. The project is cu
 - xterm.js bottom panel with bounded Host PTYs.
 - Version-aware saves, conflict UI, browser-local hot-exit recovery, and receipt-backed structural mutations.
 - Windows x64 + NTFS handle-relative create, move/rename, and delete; fail-closed structural controls elsewhere.
+- GitHub prerelease packaging with a prebuilt plugin tarball and SHA-256 checksum; npm publication remains out of scope for this alpha.
 
 ## Near term: stabilize the alpha
 
@@ -19,7 +20,7 @@ This roadmap describes direction, not a compatibility promise. The project is cu
 - Add browser-driven smoke coverage for the native Harness tab, composer suppression, theme/locale synchronization, terminal collapse, and reload recovery.
 - Tighten accessibility labels, focus restoration, contrast, and reduced-motion behavior.
 - Keep install, update, removal, compatibility, and troubleshooting documentation synchronized with the pinned Harness baseline.
-- Publish reproducible package artifacts and checksums only after the release process is agreed and exercised.
+- Exercise install, update, removal, and rollback smoke checks against each prerelease artifact before promoting compatibility claims.
 
 ## Platform work
 
@@ -46,4 +47,4 @@ Candidate additions must remain optional or lazy-loaded:
 - Supporting unauthenticated remote or multi-user access.
 - Enabling a filesystem operation before its Host containment and recovery behavior are proven.
 
-Release tags and GitHub Releases are intentionally separate from repository publication. Versioning, artifact naming, checksums, and minimum smoke evidence should be agreed before the first Release is created.
+`v0.1.0-alpha.0` is the first GitHub prerelease. Its canonical assets are the prebuilt `dsh-code-ide-0.1.0-alpha.0.tgz` and matching SHA-256 file; it is not an npm release. Future tags remain separate from ordinary repository pushes and require artifact, checksum, and minimum smoke evidence before publication.

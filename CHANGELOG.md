@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.1.0-alpha.0] - 2026-08-17
+
 ### Added
 
 - Native optional `IDE` conversation view for DeepSeek Harness.
@@ -16,7 +18,4 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ### Changed
 
 - Prepared the project as a standalone GitHub repository with package metadata, CI, installation guidance, and security/compatibility documentation.
-
-## [0.1.0-alpha.0] - Unreleased
-
-Initial alpha baseline. No GitHub Release or npm package has been published for this version.
+- Published the initial alpha as a GitHub prerelease with a prebuilt `.tgz` and SHA-256 checksum; this version is not published to npm.

@@ -1,0 +1,135 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.19.0
+          cache: pnpm
+
+      - name: Validate release tag
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          package_version="$(node -p "require('./package.json').version")"
+          expected_tag="v${package_version}"
+
+          if [[ "${RELEASE_TAG}" != "${expected_tag}" ]]; then
+            echo "Release tag ${RELEASE_TAG} must exactly match ${expected_tag}." >&2
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Pack and verify release assets
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir release
+          pnpm pack --pack-destination release
+
+          mapfile -t archives < <(find release -maxdepth 1 -type f -name '*.tgz' -print | sort)
+          if [[ "${#archives[@]}" -ne 1 ]]; then
+            echo "Expected exactly one release tarball, found ${#archives[@]}." >&2
+            exit 1
+          fi
+
+          archive="${archives[0]}"
+          archive_name="$(basename "${archive}")"
+          package_entries="$(tar -tzf "${archive}")"
+          required_entries=(
+            package/package.json
+            package/dist/host/index.js
+            package/dist/client/index.html
+            package/dist/harness-client/client.js
+            package/cordis.patch.yml
+            package/README.md
+            package/LICENSE
+            package/ThirdPartyNotices.txt
+          )
+
+          for entry in "${required_entries[@]}"; do
+            if ! grep -Fxq "${entry}" <<<"${package_entries}"; then
+              echo "Release tarball is missing ${entry}." >&2
+              exit 1
+            fi
+          done
+
+          node --input-type=commonjs - "${archive}" <<'NODE'
+          const { execFileSync } = require('node:child_process')
+
+          const archive = process.argv[2]
+          const manifest = JSON.parse(execFileSync(
+            'tar',
+            ['-xOf', archive, 'package/package.json'],
+            { encoding: 'utf8' },
+          ))
+          const scripts = manifest.scripts ?? {}
+          const forbiddenScripts = ['prepare', 'preinstall', 'install', 'postinstall']
+          const present = forbiddenScripts.filter((name) => Object.hasOwn(scripts, name))
+
+          if (present.length > 0) {
+            console.error(`Packed manifest contains forbidden lifecycle scripts: ${present.join(', ')}`)
+            process.exit(1)
+          }
+          NODE
+
+          (
+            cd release
+            sha256sum "${archive_name}" > "${archive_name}.sha256"
+          )
+
+          echo "archive=${archive}" >> "${GITHUB_OUTPUT}"
+          echo "checksum=${archive}.sha256" >> "${GITHUB_OUTPUT}"
+
+      - name: Create GitHub prerelease
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          ARCHIVE: ${{ steps.package.outputs.archive }}
+          CHECKSUM: ${{ steps.package.outputs.checksum }}
+        run: |
+          set -euo pipefail
+
+          gh release create "${RELEASE_TAG}" \
+            "${ARCHIVE}" \
+            "${CHECKSUM}" \
+            --verify-tag \
+            --prerelease \
+            --latest=false \
+            --title "${RELEASE_TAG}" \
+            --generate-notes \
+            --notes "See [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/${RELEASE_TAG}/CHANGELOG.md) for the curated changelog."
