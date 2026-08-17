@@ -28,6 +28,8 @@ Die Bedienstruktur orientiert sich an bekannten VS-Code-Konventionen. Das Projek
 - Begrenzter, verzögert geladener Explorer mit Dateisymbolen, erhaltenem Aufklappzustand, barrierearmer Tastatursteuerung und geprüften arbeitsbereichsrelativen Pfaden.
 - Vollständige Unterstützung für Anlegen, Verschieben/Umbenennen und endgültiges Löschen in lokalen NTFS-Arbeitsbereichen unter Windows x64. Linux-x64-Hosts mit erfolgreicher `openat2`-Laufzeitprüfung sowie lokale APFS-Arbeitsbereiche unter macOS x64/arm64 mit erfolgreicher `libSystem`-Laufzeitprüfung unterstützen nur das Anlegen von Dateien und Ordnern.
 - CodeMirror-6-Editor mit 20 Sprachmodi, mehreren Reitern, bis zu vier Editorgruppen, Teilung nach oben oder rechts, Drag-and-drop-/Tastatur-Sortierung, dokumentbezogenem Undo sowie Zeilenenden-, Einrückungs- und Umbruchsteuerung.
+- Umschaltung zwischen Quelltext und sicherer Vorschau für `.md`, `.markdown` und `.mdx`; die Vorschau zeigt den aktuellen Puffer einschließlich ungespeicherter Änderungen.
+- Schreibgeschützte Vorschau gängiger Bilder (PNG, JPEG, GIF, WebP, AVIF), Audioformate (MP3, WAV, OGG, FLAC) und Videos (MP4, WebM, MOV). Audio und Video verwenden native Browsersteuerung und Range-Streaming und starten nie automatisch.
 - Versionsbewusstes Speichern und Konfliktbehandlung, Wiederherstellung gelöschter Dateien, browserlokale Hot-Exit-Wiederherstellung und Abfrage externer Änderungen.
 - Quick Open, Arbeitsbereichssuche, reguläre Ausdrücke, Groß-/Kleinschreibung, Ganzwort- und include/exclude-Filter sowie Vorschau vor Ersetzungen. Ersetzungen ändern Puffer, speichern aber nicht automatisch.
 - Befehlspalette und editierbare ein- oder zweistufige Tastenkürzel mit Konflikterkennung.
@@ -124,6 +126,7 @@ Der `dsh.bundle`-Patch des Pakets fügt automatisch genau diesen Eintrag ein:
       name: dsh-code-ide
       config:
         maxFileBytes: 4194304
+        maxMediaBytes: 536870912
         terminalShell: auto
 ~~~
 
@@ -132,6 +135,7 @@ Der `dsh.bundle`-Patch des Pakets fügt automatisch genau diesen Eintrag ein:
 | Option | Standard | Bedeutung |
 |---|---:|---|
 | `maxFileBytes` | 4 MiB | Maximale Größe editierbarer UTF-8-Dateien beim Lesen/Schreiben. |
+| `maxMediaBytes` | 512 MiB | Maximale Größe einer schreibgeschützten Medienvorschau; konfigurierbar bis zur festen Obergrenze von 8 GiB. |
 | `maxDirectoryEntries` | 5.000 | Direkte Einträge einer Verzeichnisabfrage. |
 | `terminalShell` | `auto` | Nutzt `COMSPEC` unter Windows bzw. `SHELL` unter Unix. |
 | `terminalArgs` | Shellstandard | Expliziter Argumentvektor für die Shell. |
@@ -146,7 +150,7 @@ Weitere begrenzte Optionen stehen in [`src/host/plugin.ts`](src/host/plugin.ts).
 1. Das Profil `web` starten und `http://127.0.0.1:3080/` öffnen.
 2. Eine Sitzung öffnen oder anlegen, die einem Harness-Arbeitsbereich zugeordnet ist.
 3. Im Ansichtsumschalter **IDE** wählen.
-4. Eine Textdatei im Explorer oder mit Quick Open öffnen, bearbeiten und speichern.
+4. Eine Text-, Markdown- oder unterstützte Mediendatei im Explorer oder mit Quick Open öffnen. Markdown kann zwischen Quelltext und Vorschau wechseln; die Vorschau folgt dem aktuellen ungespeicherten Puffer.
 5. Mit **Search** suchen und Ersetzungen vorab prüfen; geänderte Puffer separat speichern.
 6. Über die Terminalleiste ein Terminal anlegen. Befehle laufen als aktueller lokaler Benutzer im Arbeitsbereich.
 7. Zum Chat zurückkehren, wenn Nachrichteneingabe oder offizielle Konversationsoberfläche benötigt werden.
@@ -174,11 +178,13 @@ Der Explorer nutzt Pfeiltasten, Pos1/Ende, Enter, Leertaste, `*` und Zeichensuch
 
 - Frühes, an einen Quellstand gebundenes lokales Werkzeug. Andere Harness-Commits, bewegliche Branches und Registry-RCs sind bis zur Prüfung nicht unterstützt.
 - Windows x64 verwendet in lokalen NTFS-Arbeitsbereichen eine starke Handle-Eingrenzung (handle containment) und unterstützt das Anlegen von Dateien und Ordnern, Verschieben/Umbenennen sowie endgültiges Löschen vollständig. Linux x64 unterstützt das Anlegen von Dateien und Ordnern nur nach erfolgreicher `openat2`-Laufzeitprüfung; auf Linux ARM64 und anderen Architekturen bleiben Strukturänderungen fail-closed, bis ein `openat2`-Shim mit fester Signatur verfügbar ist. macOS x64/arm64 unterstützt das Anlegen von Dateien und Ordnern nur in lokalen APFS-Arbeitsbereichen nach erfolgreicher `libSystem`-Laufzeitprüfung. Verschieben, Umbenennen und Löschen bleiben unter Linux und macOS deaktiviert. Deren trusted-local-`dirfd`-Stufe schützt nur vor Pfad-Traversal aus Browseranfragen, vorhandenen oder konkurrierenden symbolischen Links und Mount-Grenzüberschreitungen; sie widersteht keinem aktiven lokalen Prozess mit derselben UID, der rename/reparent ausführt. Fehlgeschlagene Prüfungen führen zu fail-closed; ein unbestimmtes Ergebnis nach dem Commit wird zu `recoveryRequired` oder fail-closed. Durchsuchen, Bearbeiten, Speichern, Suche und Terminals bleiben verfügbar. Endgültiges Löschen unter Windows verwendet nicht den Papierkorb; Zielpfad und Wiederherstellungsstatus vor der Bestätigung prüfen.
-- Keine VS-Code-Erweiterungen, kein Extension Host, keine LSP-Vervollständigung, kein Debugger, keine Versionsverwaltungsoberfläche, kein Binäreditor und kein Multi-Root.
+- Die Vorschau fügt keine Kompatibilität zu VS-Code-Erweiterungen hinzu. Extension Host, Marketplace, LSP-Vervollständigung, Debugger, Versionsverwaltungsoberfläche, beliebige Binärbearbeitung und Multi-Root bleiben nicht unterstützt.
 - IDE-Endpunkte verlangen Loopback und passenden Origin. Dieses MVP nicht im LAN oder Internet bereitstellen; Remote-Authentifizierung, TLS, Prozessisolation, Quoten und Audit-Logs fehlen.
 - Pfadprüfung verhindert Traversal und beobachtete Symlinks, ist aber keine OS-Sandbox gegen andere Prozesse desselben Benutzers.
 - Das Terminal besitzt die Rechte des aktuellen Benutzers. Verdächtige Umgebungsvariablennamen werden per Denyliste entfernt; das ist keine geheimnissichere Sandbox. Prozessbaum-Bereinigung erfolgt bestmöglich.
 - Ungespeicherter Text und Kürzel können unverschlüsselt im gleichursprünglichen `localStorage` liegen. Wiederherstellung ist begrenzt und bestmöglich.
+- Die Markdown-Vorschau führt weder raw HTML noch MDX aus. Links erlauben nur `http:`, `https:` und `mailto:`; HTTP(S)-Links öffnen ohne Opener- oder Referrer-Berechtigung in einem neuen Reiter. Relative Bilder werden ausschließlich über den gleichursprünglichen, arbeitsbereichsbeschränkten Medienendpunkt geladen.
+- Medien sind schreibgeschützt, nach Erweiterung freigegeben und durch `maxMediaBytes` begrenzt. Audio/Video akzeptiert zum Suchen einen einzelnen HTTP-Bytebereich und startet nie automatisch. SVG wird bewusst nicht unterstützt.
 - Externe Änderungen werden abgefragt, nicht nativ überwacht. Terminalzustand wird nach hartem Neuladen nicht wiederhergestellt.
 - Die Anwendung selbst unterstützt derzeit nur Englisch und vereinfachtes Chinesisch; diese Übersetzung bedeutet keine deutsche UI.
 

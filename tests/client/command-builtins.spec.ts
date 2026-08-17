@@ -17,6 +17,7 @@ function initialContext(): WorkbenchCommandContext {
     activeEditorSaving: false,
     activeEditorDeleted: false,
     activeEditorReadOnly: false,
+    activeTextEditorVisible: true,
     activeEditorEditable: true,
     activeEditorUndoAvailable: true,
     activeEditorRedoAvailable: true,
@@ -554,6 +555,24 @@ describe('built-in workbench commands', () => {
     expect(await registry.execute('editor.action.changeIndentationSize')).toMatchObject({ status: 'completed' })
     expect(currentActions.showChangeLanguageMode).toHaveBeenCalledOnce()
     expect(currentActions.showChangeIndentationSize).toHaveBeenCalledOnce()
+  })
+
+  it('keeps document actions available while Markdown preview hides source-only editor commands', async () => {
+    const context = initialContext()
+    context.activeTextEditorVisible = false
+    context.activeEditorEditable = false
+    const currentActions = actions()
+    const registry = new CommandRegistry(() => context)
+    registerWorkbenchCommands(registry, () => currentActions)
+
+    expect(await registry.execute('workbench.action.gotoLine')).toMatchObject({ status: 'disabled' })
+    expect(await registry.execute('editor.action.toggleWordWrap')).toMatchObject({ status: 'disabled' })
+    expect(await registry.execute('workbench.action.editor.changeLanguageMode')).toMatchObject({ status: 'disabled' })
+    expect(await registry.execute('editor.action.changeIndentationSize')).toMatchObject({ status: 'disabled' })
+    expect(await registry.execute('workbench.action.files.save')).toMatchObject({ status: 'completed' })
+    expect(await registry.execute('workbench.action.files.revert')).toMatchObject({ status: 'completed' })
+    expect(currentActions.saveActive).toHaveBeenCalledOnce()
+    expect(currentActions.revertActive).toHaveBeenCalledOnce()
   })
 
   it('offers Revert File only for an unblocked dirty editable disk file', async () => {

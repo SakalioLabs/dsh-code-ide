@@ -34,6 +34,7 @@ export function resolveConfig(config) {
         routePrefix,
         staticRoot: config.staticRoot ?? defaultStaticRoot(),
         maxFileBytes,
+        maxMediaBytes: positiveInteger(config.maxMediaBytes, 512 * 1024 * 1024, 'maxMediaBytes', 8 * 1024 * 1024 * 1024),
         maxRequestBytes: positiveInteger(config.maxRequestBytes, maxFileBytes * 6 + 64 * 1024, 'maxRequestBytes', 64 * 1024 * 1024 * 6 + 64 * 1024),
         maxDirectoryEntries,
         maxInspectTargets: positiveInteger(config.maxInspectTargets, DEFAULT_MAX_INSPECT_TARGETS, 'maxInspectTargets', 4_096),
@@ -77,6 +78,7 @@ export function apply(ctx, input = {}) {
     ctx.plugin(workspaceMutationBackendProvider, {});
     ctx.plugin(workspaceFilesProvider, {
         maxFileBytes: config.maxFileBytes,
+        maxMediaBytes: config.maxMediaBytes,
         maxDirectoryEntries: config.maxDirectoryEntries,
         maxInspectTargets: config.maxInspectTargets,
         maxInspectDirectoryEntries: config.maxInspectDirectoryEntries,

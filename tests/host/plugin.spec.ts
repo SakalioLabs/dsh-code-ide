@@ -9,6 +9,14 @@ describe('Host plugin configuration', () => {
     expect(config.maxRequestBytes).toBe(maxFileBytes * 6 + 64 * 1024)
   })
 
+  it('publishes an independent bounded media streaming cap', () => {
+    expect(resolveConfig({}).maxMediaBytes).toBe(512 * 1024 * 1024)
+    expect(resolveConfig({ maxMediaBytes: 8 * 1024 * 1024 * 1024 }).maxMediaBytes)
+      .toBe(8 * 1024 * 1024 * 1024)
+    expect(() => resolveConfig({ maxMediaBytes: 0 })).toThrow('maxMediaBytes')
+    expect(() => resolveConfig({ maxMediaBytes: 8 * 1024 * 1024 * 1024 + 1 })).toThrow('maxMediaBytes')
+  })
+
   it('publishes bounded workspace-search defaults and validates their caps', () => {
     const config = resolveConfig({})
     expect(config).toMatchObject({

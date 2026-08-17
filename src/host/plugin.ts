@@ -16,6 +16,7 @@ import { workspaceResourcesProvider } from './workspace-resources-provider.js'
 export interface Config {
   staticRoot?: string
   maxFileBytes?: number
+  maxMediaBytes?: number
   maxRequestBytes?: number
   maxDirectoryEntries?: number
   maxInspectTargets?: number
@@ -50,6 +51,7 @@ export interface ResolvedConfig {
   routePrefix: string
   staticRoot: string
   maxFileBytes: number
+  maxMediaBytes: number
   maxRequestBytes: number
   maxDirectoryEntries: number
   maxInspectTargets: number
@@ -104,6 +106,12 @@ export function resolveConfig(config: Config): ResolvedConfig {
     routePrefix,
     staticRoot: config.staticRoot ?? defaultStaticRoot(),
     maxFileBytes,
+    maxMediaBytes: positiveInteger(
+      config.maxMediaBytes,
+      512 * 1024 * 1024,
+      'maxMediaBytes',
+      8 * 1024 * 1024 * 1024,
+    ),
     maxRequestBytes: positiveInteger(
       config.maxRequestBytes,
       maxFileBytes * 6 + 64 * 1024,
@@ -165,6 +173,7 @@ export function apply(ctx: HostPluginContext, input: Config = {}): void {
   ctx.plugin(workspaceMutationBackendProvider, {})
   ctx.plugin(workspaceFilesProvider, {
     maxFileBytes: config.maxFileBytes,
+    maxMediaBytes: config.maxMediaBytes,
     maxDirectoryEntries: config.maxDirectoryEntries,
     maxInspectTargets: config.maxInspectTargets,
     maxInspectDirectoryEntries: config.maxInspectDirectoryEntries,

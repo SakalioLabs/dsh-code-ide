@@ -92,6 +92,11 @@
 .saveArea button:disabled, .terminalToolbar button:disabled { opacity: .45; cursor: default; }
 .saveArea .editorMore { display: grid; width: 27px; height: 27px; place-items: center; padding: 0; border: 0; background: transparent; font-size: 17px; line-height: 1; }
 .saveArea .editorMore:hover { background: #343945; }
+.markdownViewSwitcher { display: flex; flex: none; align-items: center; gap: 1px; padding: 4px; }
+.markdownViewSwitcher button { height: 25px; padding: 0 8px; border: 0; border-radius: 3px; color: #929aa7; background: transparent; font-size: 11px; cursor: pointer; }
+.markdownViewSwitcher button:hover { color: #eef1f6; background: #343945; }
+.markdownViewSwitcher button[aria-pressed="true"] { color: #eef1f6; background: #292e39; box-shadow: inset 0 -1px rgb(143 169 255 / 48%); }
+.markdownViewSwitcher button:focus-visible { outline: 1px solid #8fa9ff; outline-offset: -1px; }
 .editorPanel { display: flex; flex: 1; min-width: 0; min-height: 0; overflow: hidden; }
 .editorStatusBar { position: relative; z-index: 2; display: flex; grid-column: 1; grid-row: 4; flex: none; align-items: center; justify-content: flex-start; min-width: 0; height: 23px; min-height: 23px; padding: 0 4px; overflow-x: auto; overflow-y: hidden; isolation: isolate; border-top: 1px solid #30343e; color: #aeb5c2; background: #20232b; font-size: 11px; scrollbar-width: none; }
 .editorStatusBar > :first-child { margin-left: auto; }
@@ -118,6 +123,43 @@
 .readOnlyFilePreview > div span { color: #818a98; }
 .readOnlyFilePreview pre { max-height: min(42vh, 420px); margin: 0; padding: 12px; overflow: auto; color: #d9dee8; font: 12px/1.5 "Cascadia Code", "SFMono-Regular", Consolas, monospace; white-space: pre; }
 .readOnlyFileCard .readOnlyFileHint { color: #818a98; font-size: 12px; }
+.markdownPreview { flex: 1; min-width: 0; min-height: 0; overflow: auto; outline: 0; color: #d9dee8; background: #17191f; }
+.markdownPreview:focus-visible, .mediaPreview:focus-visible { box-shadow: inset 0 0 0 2px #8fa9ff; }
+@media (forced-colors: active) {
+  .markdownPreview:focus-visible, .mediaPreview:focus-visible { outline: 2px solid Highlight; outline-offset: -2px; box-shadow: none; }
+}
+.markdownBody { width: min(900px, calc(100% - 48px)); margin: 0 auto; padding: 30px 0 64px; font-size: 14px; line-height: 1.68; overflow-wrap: anywhere; }
+.markdownBody h1, .markdownBody h2, .markdownBody h3, .markdownBody h4, .markdownBody h5, .markdownBody h6 { margin: 1.5em 0 .65em; color: #eef1f6; line-height: 1.25; }
+.markdownBody h1, .markdownBody h2 { padding-bottom: .32em; border-bottom: 1px solid #30343e; }
+.markdownBody h1 { font-size: 2em; }
+.markdownBody h2 { font-size: 1.5em; }
+.markdownBody h3 { font-size: 1.25em; }
+.markdownBody p, .markdownBody ul, .markdownBody ol, .markdownBody blockquote, .markdownBody pre, .markdownBody table { margin: 0 0 1em; }
+.markdownBody ul, .markdownBody ol { padding-left: 2em; }
+.markdownBody li + li { margin-top: .25em; }
+.markdownBlockquote { padding: 0 1em; border-left: 3px solid #505765; color: #aeb5c2; }
+.markdownInlineCode { padding: .15em .35em; border-radius: 3px; color: #e8c68f; background: #292e39; font: .92em "Cascadia Code", "SFMono-Regular", Consolas, monospace; }
+.markdownCodeBlock { padding: 14px 16px; overflow: auto; border: 1px solid #30343e; border-radius: 5px; color: #d9dee8; background: #111318; font: 12px/1.55 "Cascadia Code", "SFMono-Regular", Consolas, monospace; }
+.markdownLink { padding: 0; border: 0; color: #8fa9ff; background: transparent; font: inherit; text-decoration: none; cursor: pointer; }
+.markdownLink:hover { text-decoration: underline; }
+.markdownLinkBlocked, .markdownImageFallback { color: #f0bd68; }
+.markdownImage { display: block; max-width: 100%; max-height: 70vh; margin: 1em auto; object-fit: contain; }
+.markdownTableScroll { max-width: 100%; margin: 0 0 1em; overflow-x: auto; }
+.markdownTable { width: max-content; min-width: 100%; border-collapse: collapse; }
+.markdownTable th, .markdownTable td { padding: 6px 10px; border: 1px solid #3a404c; text-align: left; }
+.markdownTable th { color: #eef1f6; background: #20232b; }
+.markdownTask { display: inline-flex; align-items: center; gap: 6px; }
+.markdownTask input { margin: 0; accent-color: #6f91ed; }
+.markdownRawHtml { color: #aeb5c2; }
+.markdownNotice { padding: 14px; border: 1px solid #785f35; border-radius: 5px; color: #f0bd68; background: #2c261d; }
+.mediaPreview { display: grid; flex: 1; min-width: 0; min-height: 0; padding: 24px; overflow: auto; outline: 0; place-items: center; color: #d9dee8; background: #17191f; }
+.mediaPreviewContent { position: relative; display: grid; width: 100%; height: 100%; min-height: 160px; place-items: center; }
+.mediaPreviewImage { max-width: 100%; max-height: 100%; object-fit: contain; image-rendering: auto; }
+.mediaPreviewVideo { width: min(100%, 1120px); max-height: 100%; background: #0d0f13; }
+.mediaPreviewAudio { width: min(520px, 100%); }
+.mediaPreviewStatus, .mediaPreviewError { position: absolute; max-width: 520px; margin: 0; padding: 9px 12px; border-radius: 5px; background: #20232b; }
+.mediaPreviewStatus { color: #aeb5c2; }
+.mediaPreviewError { border: 1px solid #785f35; color: #f0bd68; }
 
 .fileExplorer { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; }
 .explorerToolbar { display: flex; align-items: center; gap: 8px; flex: none; min-height: 34px; padding: 6px 8px 6px 12px; border-bottom: 1px solid #292d36; text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
@@ -541,6 +583,31 @@
 .appEmbedded .readOnlyFileView {
   background: var(--ide-embedded-bg-base);
 }
+.appEmbedded .markdownPreview,
+.appEmbedded .mediaPreview { color: var(--ide-embedded-label-primary); background: var(--ide-embedded-bg-base); }
+.appEmbedded .markdownBody h1,
+.appEmbedded .markdownBody h2,
+.appEmbedded .markdownBody h3,
+.appEmbedded .markdownBody h4,
+.appEmbedded .markdownBody h5,
+.appEmbedded .markdownBody h6 { color: var(--ide-embedded-label-primary); }
+.appEmbedded .markdownBody h1,
+.appEmbedded .markdownBody h2,
+.appEmbedded .markdownCodeBlock,
+.appEmbedded .markdownTable th,
+.appEmbedded .markdownTable td { border-color: var(--ide-embedded-border-l1); }
+.appEmbedded .markdownBlockquote { border-left-color: var(--ide-embedded-border-l3); color: var(--ide-embedded-label-secondary); }
+.appEmbedded .markdownInlineCode,
+.appEmbedded .markdownTable th,
+.appEmbedded .mediaPreviewStatus { background: var(--ide-embedded-bg-layer-2); }
+.appEmbedded .markdownCodeBlock { color: var(--ide-embedded-label-primary); background: var(--ide-embedded-bg-layer-1); }
+.appEmbedded .markdownLink { color: var(--ide-embedded-accent); }
+.appEmbedded .markdownLinkBlocked,
+.appEmbedded .markdownImageFallback,
+.appEmbedded .markdownNotice,
+.appEmbedded .mediaPreviewError { color: var(--ide-embedded-warning); }
+.appEmbedded .markdownNotice,
+.appEmbedded .mediaPreviewError { border-color: color-mix(in srgb, var(--ide-embedded-warning) 45%, transparent); background: var(--ide-embedded-bg-layer-2); }
 .appEmbedded .editorGroupDivider { background: var(--ide-embedded-border-l1); }
 .appEmbedded .editorGroupLeaf[data-active-group="true"] > .tabBar { box-shadow: none; }
 .appEmbedded .editorGroupDropZone { border: 0; background: transparent; }
@@ -615,6 +682,12 @@
   color: var(--ide-embedded-label-primary);
   background: var(--ide-embedded-hover);
 }
+.appEmbedded .markdownViewSwitcher button { color: var(--ide-embedded-label-tertiary); }
+.appEmbedded .markdownViewSwitcher button:hover { color: var(--ide-embedded-label-primary); background: var(--ide-embedded-hover); }
+.appEmbedded .markdownViewSwitcher button[aria-pressed="true"] { color: var(--ide-embedded-label-primary); background: var(--ide-embedded-control); box-shadow: inset 0 -1px color-mix(in srgb, var(--ide-embedded-accent) 42%, transparent); }
+.appEmbedded .markdownViewSwitcher button:focus-visible,
+.appEmbedded .markdownPreview:focus-visible,
+.appEmbedded .mediaPreview:focus-visible { outline-color: var(--ide-embedded-accent); }
 .appEmbedded .editorStatusBar {
   border-top-color: var(--ide-embedded-border-l1);
   color: var(--ide-embedded-label-secondary);

@@ -72,6 +72,13 @@ const EN = {
   replacementPreview: 'Replacement preview', oneReplacement: '{count} replacement',
   manyReplacements: '{count} replacements', oneChange: '{count} change', manyChanges: '{count} changes',
   beforeReplacement: 'Before', afterReplacement: 'After',
+  sourceView: 'Source', previewView: 'Preview', markdownPreview: 'Markdown preview',
+  showMarkdownSource: 'Show Markdown source', showMarkdownPreview: 'Show Markdown preview',
+  markdownPreviewTooLarge: 'This Markdown file is too large to preview safely. Open the source view instead.',
+  markdownPreviewUnavailable: 'This Markdown file could not be previewed safely. Open the source view instead.',
+  completedTask: 'Completed task', incompleteTask: 'Incomplete task',
+  imagePreview: 'Image preview', videoPreview: 'Video preview', audioPreview: 'Audio preview',
+  loadingMediaPreview: 'Loading media preview…', mediaPreviewFailed: 'This media file could not be displayed by the browser.',
   resizeExplorer: 'Resize Explorer', resizeTerminal: 'Resize Terminal',
 } as const
 
@@ -137,6 +144,13 @@ const ZH: Record<IdeMessageKey, string> = {
   replacementPreview: '替换预览', oneReplacement: '{count} 处替换',
   manyReplacements: '{count} 处替换', oneChange: '{count} 处更改', manyChanges: '{count} 处更改',
   beforeReplacement: '替换前', afterReplacement: '替换后',
+  sourceView: '源码', previewView: '预览', markdownPreview: 'Markdown 预览',
+  showMarkdownSource: '显示 Markdown 源码', showMarkdownPreview: '显示 Markdown 预览',
+  markdownPreviewTooLarge: '此 Markdown 文件过大，无法安全预览，请切换到源码视图。',
+  markdownPreviewUnavailable: '无法安全生成此 Markdown 文件的预览，请切换到源码视图。',
+  completedTask: '已完成任务', incompleteTask: '未完成任务',
+  imagePreview: '图片预览', videoPreview: '视频预览', audioPreview: '音频预览',
+  loadingMediaPreview: '正在加载媒体预览…', mediaPreviewFailed: '浏览器无法显示此媒体文件。',
   resizeExplorer: '调整资源管理器大小', resizeTerminal: '调整终端大小',
 }
 

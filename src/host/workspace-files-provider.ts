@@ -7,6 +7,7 @@ import { WorkspaceFileService } from './filesystem.js'
 
 export interface WorkspaceFilesProviderConfig {
   maxFileBytes: number
+  maxMediaBytes: number
   maxDirectoryEntries: number
   maxInspectTargets: number
   maxInspectDirectoryEntries: number
@@ -20,6 +21,7 @@ export function workspaceFilesProvider(
   const resources = ctx[WORKSPACE_RESOURCES_CAPABILITY]
   const files = new WorkspaceFileService(resources.registry, {
     maxFileBytes: config.maxFileBytes,
+    maxMediaBytes: config.maxMediaBytes,
     maxDirectoryEntries: config.maxDirectoryEntries,
     maxInspectTargets: config.maxInspectTargets,
     maxInspectDirectoryEntries: config.maxInspectDirectoryEntries,

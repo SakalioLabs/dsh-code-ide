@@ -28,6 +28,8 @@
 - 遅延読み込み式の Explorer、ファイルアイコン、展開状態の保持、キーボード操作、ワークスペース相対パスの検証。
 - Windows x64 のローカル NTFS ワークスペースでは、作成、移動／名前変更、完全削除をすべてサポートします。実行時 `openat2` プローブに成功した Linux x64 Host と、実行時 `libSystem` プローブに成功した macOS x64/arm64 のローカル APFS ワークスペースでは、ファイル／フォルダーの作成のみをサポートします。
 - CodeMirror 6 による 20 言語モード、複数タブ、最大 4 グループ、上／右方向への分割、タブのドラッグ／キーボード並べ替え、文書別 Undo、改行・インデント・折り返し設定。
+- `.md`、`.markdown`、`.mdx` のソース／安全なプレビュー切り替え。プレビューには未保存の編集を含む現在のバッファーが反映されます。
+- 一般的な画像（PNG、JPEG、GIF、WebP、AVIF）、音声（MP3、WAV、OGG、FLAC）、動画（MP4、WebM、MOV）の読み取り専用プレビュー。音声・動画はブラウザー標準コントロールと Range ストリーミングを使い、自動再生しません。
 - バージョン確認付き保存、競合処理、削除済みファイルの再作成、ブラウザー内ホットイグジット復元、外部変更のポーリング。
 - Quick Open、ワークスペース検索、正規表現・大文字小文字・単語・include/exclude、結果移動、プレビュー後に適用する置換。置換後のバッファーは自動保存されません。
 - Command Palette と、競合検出付きの編集可能な 1～2 ストロークショートカット。
@@ -124,6 +126,7 @@ corepack pnpm dsh plugin --profile web add github:SakalioLabs/dsh-code-ide
       name: dsh-code-ide
       config:
         maxFileBytes: 4194304
+        maxMediaBytes: 536870912
         terminalShell: auto
 ~~~
 
@@ -132,6 +135,7 @@ corepack pnpm dsh plugin --profile web add github:SakalioLabs/dsh-code-ide
 | 項目 | 既定値 | 内容 |
 |---|---:|---|
 | `maxFileBytes` | 4 MiB | 編集可能な UTF-8 ファイルの読み書き上限。 |
+| `maxMediaBytes` | 512 MiB | 1 件の読み取り専用メディアプレビュー上限。設定可能で、ハード上限は 8 GiB。 |
 | `maxDirectoryEntries` | 5,000 | 1 回の一覧で返す直下項目数。 |
 | `terminalShell` | `auto` | Windows は `COMSPEC`、Unix は `SHELL` を使用。 |
 | `terminalArgs` | シェル既定 | シェルへ渡す明示的な引数配列。 |
@@ -146,7 +150,7 @@ corepack pnpm dsh plugin --profile web add github:SakalioLabs/dsh-code-ide
 1. `web` profile を起動し、`http://127.0.0.1:3080/` を開きます。
 2. Harness ワークスペースに属するセッションを開くか作成します。
 3. 会話ビューの **IDE** を選択します。
-4. Explorer または Quick Open からテキストファイルを開き、編集して保存します。
+4. Explorer または Quick Open からテキスト、Markdown、対応メディアを開きます。Markdown はソース／プレビューを切り替えられ、プレビューには現在の未保存バッファーが反映されます。
 5. **Search** で検索と置換プレビューを行い、変更したバッファーは別途保存します。
 6. 端末ツールバーから端末を作成します。コマンドは現在のローカルユーザー権限で実行されます。
 7. Harness の入力欄や会話 UI が必要なら Chat に戻ります。
@@ -174,11 +178,13 @@ Explorer は矢印、Home/End、Enter、Space、`*`、文字入力検索に対�
 
 - 不安定な上流へ固定した初期段階のローカル開発ツールです。他コミットや移動ブランチ、別 RC は未サポートです。
 - Windows x64 はローカル NTFS ワークスペースで強力なハンドル封じ込め（handle containment）を使用し、ファイル／フォルダー作成、移動／名前変更、完全削除をすべてサポートします。Linux x64 は実行時 `openat2` プローブに成功した場合のみファイル／フォルダー作成をサポートし、Linux ARM64 などのアーキテクチャでは固定シグネチャーの `openat2` shim が提供されるまで構造操作を fail-closed に保ちます。macOS x64/arm64 はローカル APFS ワークスペースで実行時 `libSystem` プローブに成功した場合のみ、ファイル／フォルダー作成をサポートします。Linux／macOS では移動、名前変更、削除は引き続き無効です。両者の trusted-local `dirfd` 階層が防御するのは、ブラウザー要求によるパストラバーサル、既存または競合するシンボリックリンク、マウント越境だけであり、同一 UID のローカルプロセスが能動的に行う rename/reparent には対抗しません。プローブ失敗時は fail-closed とし、コミット後の結果が不確定な場合は `recoveryRequired` または fail-closed になります。閲覧、編集、保存、検索、端末は引き続き利用できます。Windows の完全削除はごみ箱を使わないため、確定前に対象パスと recovery 状態を確認してください。
-- VS Code 拡張、拡張ホスト、LSP 補完、デバッガー、ソース管理 UI、バイナリエディター、マルチルートには対応しません。
+- プレビュー機能を追加しても VS Code 拡張との互換性はありません。拡張ホスト、Marketplace、LSP 補完、デバッガー、ソース管理 UI、任意のバイナリ編集、マルチルートには引き続き対応しません。
 - IDE endpoint は loopback と同一オリジンを要求します。LAN や Internet へ公開しないでください。遠隔ユーザー認証、TLS、プロセス分離、quota、監査ログはありません。
 - パス検証は traversal と確認済み symlink を拒否しますが、同一ユーザーの別プロセスに対する OS sandbox ではありません。
 - 端末は現在ユーザーの権限を持ちます。機密らしい環境変数名は denylist で除去しますが、秘密情報を保証する sandbox ではありません。
 - 未保存テキストとショートカット設定は同一オリジンの `localStorage` に平文で保存される場合があります。復元は有限かつ best-effort です。
+- Markdown プレビューは raw HTML や MDX を実行しません。リンクは `http:`、`https:`、`mailto:` のみ許可し、HTTP(S) は opener と referrer の権限を渡さず新しいタブで開きます。相対画像は同一オリジンかつワークスペース制約付きのメディア endpoint だけから読み込みます。
+- メディアは読み取り専用で、拡張子 allowlist と `maxMediaBytes` の制限を受けます。音声・動画はシーク用に単一 HTTP byte range を受け付け、自動再生しません。SVG は意図的に未対応です。
 - 外部変更は polling であり native watcher ではありません。端末状態はハードリロード後に復元されません。
 - アプリ UI は英語と簡体字中国語のみです。この日本語文書は日本語 UI を意味しません。
 

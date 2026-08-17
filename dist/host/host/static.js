@@ -21,7 +21,7 @@ function inside(root, candidate) {
     return delta === '' || (delta !== '..' && !delta.startsWith(`..${sep}`) && !isAbsolute(delta));
 }
 function securityHeaders(response) {
-    response.setHeader('content-security-policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-src 'self'; object-src 'none'; base-uri 'self'");
+    response.setHeader('content-security-policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-src 'self'; object-src 'none'; base-uri 'self'");
     response.setHeader('cross-origin-resource-policy', 'same-origin');
     response.setHeader('x-content-type-options', 'nosniff');
     response.setHeader('x-frame-options', 'SAMEORIGIN');

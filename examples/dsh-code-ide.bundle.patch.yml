@@ -6,4 +6,5 @@
       name: dsh-code-ide
       config:
         maxFileBytes: 4194304
+        maxMediaBytes: 536870912
         terminalShell: auto

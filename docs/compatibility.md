@@ -21,6 +21,7 @@ CI runs type checking, unit tests, builds, and package creation on Windows x64, 
 | --- | --- | --- | --- |
 | Browse, inspect, and read | Yes | Yes | Yes |
 | Edit and versioned save | Yes | Yes | Yes |
+| Markdown and allow-listed media preview | Yes | Yes | Yes |
 | File and text search | Yes | Yes | Yes, when the bundled ripgrep package is available |
 | Integrated terminal | Yes | Yes | Yes, when `node-pty` and a shell are available |
 | Create file/folder | Yes, after NTFS native probe | Yes, after `openat2` native probe | Yes, after local-APFS native probe |
@@ -42,6 +43,8 @@ Windows uses the strong `backend-owned-handle-relative-v1` confinement tier. Lin
 - Symbolic links and reparse points are not available through the IDE.
 - Nested or cross-device mounts are rejected when the Host cannot prove containment.
 - Editable files must be UTF-8 text and are limited to 4 MiB by default. Binary and oversized files use a read-only presentation.
+- `.md`, `.markdown`, and `.mdx` can switch between source and a safe preview of the current buffer. Raw HTML and MDX are not executed.
+- Allow-listed image, audio, and video files are previewed read-only with native browser surfaces. Audio/video use HTTP byte-range streaming and never autoplay. `maxMediaBytes` defaults to 512 MiB, is configurable up to 8 GiB, and SVG is unsupported.
 - Directory listings are limited to 5,000 entries by default.
 - Existing-file saves require the exact version returned by the read operation; external changes become conflicts.
 - Search uses the packaged `@vscode/ripgrep` binary and bounded result, candidate, byte, concurrency, and timeout limits.
@@ -62,4 +65,6 @@ The project does not support:
 - unauthenticated multi-user hosting;
 - opening arbitrary directories that are not registered Harness workspaces;
 - following symlinks from a workspace;
-- editing binary files.
+- editing binary files (allow-listed media preview is read-only).
+
+Preview support does not provide VS Code extension or VSIX compatibility.

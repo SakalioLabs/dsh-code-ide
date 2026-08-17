@@ -13,6 +13,8 @@ export interface WorkbenchCommandContext {
   readonly activeEditorSaving: boolean
   readonly activeEditorDeleted: boolean
   readonly activeEditorReadOnly: boolean
+  /** A CodeEditor surface is mounted; false for Markdown and media presentations. */
+  readonly activeTextEditorVisible?: boolean
   /** Exact editor-surface write admission; pending saves do not make the buffer non-editable. */
   readonly activeEditorEditable: boolean
   readonly activeEditorUndoAvailable: boolean
@@ -107,6 +109,7 @@ export const WORKBENCH_KEYBINDING_CONTEXT_SCHEMA: KeybindingContextSchema = Obje
   activeEditorSaving: 'boolean',
   activeEditorDeleted: 'boolean',
   activeEditorReadOnly: 'boolean',
+  activeTextEditorVisible: 'boolean',
   activeEditorEditable: 'boolean',
   activeEditorUndoAvailable: 'boolean',
   activeEditorRedoAvailable: 'boolean',
@@ -472,9 +475,11 @@ export function registerWorkbenchCommands(
       category: 'Go',
       description: 'Move the active editor caret to a one-based line and optional column.',
       defaultKeybindings: [{ id: 'primary', sequence: [{ primary: true, key: 'g' }] }],
-      enablement: context => context.activeEditorReadOnly
-        ? { enabled: false, reason: 'The active file is a read-only preview.' }
-        : available(context.activeEditor, 'No active editor.'),
+      enablement: context => {
+        if (!context.activeEditor) return { enabled: false, reason: 'No active editor.' }
+        if (context.activeEditorReadOnly) return { enabled: false, reason: 'The active file is a read-only preview.' }
+        return available(context.activeTextEditorVisible === true, 'Switch to the source view to navigate by line.')
+      },
       run: () => { getActions().showGoToLine() },
     },
     {
@@ -555,7 +560,8 @@ export function registerWorkbenchCommands(
       keybindingPolicy: 'allow',
       enablement: context => {
         if (!context.activeEditor) return { enabled: false, reason: 'No active editor.' }
-        return available(!context.activeEditorReadOnly, 'The active file is a read-only preview.')
+        if (context.activeEditorReadOnly) return { enabled: false, reason: 'The active file is a read-only preview.' }
+        return available(context.activeTextEditorVisible === true, 'Switch to the source view to change indentation.')
       },
       run: () => { getActions().showChangeIndentationSize() },
     },
@@ -576,7 +582,8 @@ export function registerWorkbenchCommands(
       keybindingPolicy: 'allow',
       enablement: context => {
         if (!context.activeEditor) return { enabled: false, reason: 'No active editor.' }
-        return available(!context.activeEditorReadOnly, 'The active file is a read-only preview.')
+        if (context.activeEditorReadOnly) return { enabled: false, reason: 'The active file is a read-only preview.' }
+        return available(context.activeTextEditorVisible === true, 'Switch to the source view to change the language mode.')
       },
       run: () => { getActions().showChangeLanguageMode() },
     },
@@ -588,7 +595,8 @@ export function registerWorkbenchCommands(
       defaultKeybindings: [{ id: 'altZ', sequence: [{ alt: true, key: 'z' }] }],
       enablement: context => {
         if (!context.activeEditor) return { enabled: false, reason: 'No active editor.' }
-        return available(!context.activeEditorReadOnly, 'The active file is a read-only preview.')
+        if (context.activeEditorReadOnly) return { enabled: false, reason: 'The active file is a read-only preview.' }
+        return available(context.activeTextEditorVisible === true, 'Switch to the source view to change word wrapping.')
       },
       run: () => { getActions().toggleWordWrap() },
     },

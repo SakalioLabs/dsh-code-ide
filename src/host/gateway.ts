@@ -7,6 +7,7 @@ import {
   type IdeGatewayContext,
 } from './capabilities.js'
 import { hostError, IdeHostError } from './errors.js'
+import { createMediaHandler } from './media.js'
 import { createStaticHandler } from './static.js'
 import { rejectUpgrade } from './terminal.js'
 import { isTrustedLocalRequest } from './trust.js'
@@ -41,7 +42,9 @@ export function ideGateway(ctx: IdeGatewayContext, config: GatewayConfig): void 
     logger: ctx.logger,
   }, search)
   const staticFiles = createStaticHandler(config.staticRoot, config.routePrefix)
+  const media = createMediaHandler(files)
   const apiPath = `${config.routePrefix}/api`
+  const mediaPath = `${config.routePrefix}/media`
   const terminalPath = `${config.routePrefix}/terminal`
 
   ctx.effect(() => ctx.webServer.register({
@@ -63,12 +66,16 @@ export function ideGateway(ctx: IdeGatewayContext, config: GatewayConfig): void 
         await api(request, response)
         return
       }
+      if (pathname === mediaPath) {
+        await media(request, response)
+        return
+      }
       if (pathname === terminalPath) {
         response.writeHead(426, { connection: 'Upgrade', upgrade: 'websocket' })
         response.end('WebSocket upgrade required')
         return
       }
-      if (pathname.startsWith(`${apiPath}/`)) {
+      if (pathname.startsWith(`${apiPath}/`) || pathname.startsWith(`${mediaPath}/`)) {
         sendHttpError(response, new IdeHostError('NOT_FOUND', 'Unknown IDE API route.', 404))
         return
       }

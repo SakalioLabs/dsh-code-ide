@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { constants, type BigIntStats } from 'node:fs'
-import { link, lstat, open, opendir, realpath, rename, unlink } from 'node:fs/promises'
+import { link, lstat, open, opendir, realpath, rename, unlink, type FileHandle } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import { TextDecoder } from 'node:util'
 import {
@@ -15,6 +15,10 @@ import {
   type ReadFileResponse,
   type ReadOnlyFilePresentation,
 } from '../shared/workspace-files.js'
+import {
+  mediaPreviewDescriptor,
+  type MediaPreviewDescriptor,
+} from '../shared/media-preview.js'
 import type {
   FileEntry,
   FileKind,
@@ -24,6 +28,7 @@ import type {
 } from './contracts.js'
 import { IdeHostError } from './errors.js'
 import {
+  assertNoNestedMount,
   isInternalWorkspaceName,
   isPathInside,
   parseWorkspacePath,
@@ -39,6 +44,8 @@ const READ_CHUNK_BYTES = 64 * 1024
 
 export interface WorkspaceFileServiceOptions {
   maxFileBytes: number
+  /** Maximum byte size exposed through the bounded media streaming route. */
+  maxMediaBytes?: number
   maxDirectoryEntries: number
   /** Raw targets accepted by one inspect request, before exact de-duplication. */
   maxInspectTargets?: number
@@ -52,9 +59,20 @@ export interface WorkspaceFileServiceInternals {
   afterOpenedFileRead?: (path: string) => void | Promise<void>
   /** Runs after atomic publication and capture of our committed snapshot, before response verification. */
   afterPublishCommit?: (path: string) => void | Promise<void>
+  /** Overrides Linux mount-boundary evidence for deterministic media-open tests. */
+  assertNoNestedMount?: typeof assertNoNestedMount
 }
 
 export type ReadFileResult = ReadFileResponse
+
+export interface OpenMediaResult {
+  readonly descriptor: MediaPreviewDescriptor
+  readonly handle: FileHandle
+  readonly path: string
+  readonly sizeBytes: number
+  readonly version: string
+  close(): Promise<void>
+}
 
 export interface WriteFileResult {
   path: string
@@ -299,6 +317,8 @@ export class WorkspaceFileService {
   private readonly resources: WorkspaceResources
   private readonly ownsResources: boolean
   private readonly activeMutations = new Set<Promise<void>>()
+  private readonly activeMediaOpens = new Set<Promise<OpenMediaResult>>()
+  private readonly activeMediaHandles = new Set<FileHandle>()
   private disposing = false
 
   constructor(
@@ -557,6 +577,112 @@ export class WorkspaceFileService {
     }
   }
 
+  /**
+   * Open one allowlisted media file while preserving the workspace root,
+   * symlink, mount, snapshot, and optional observed-version boundaries used by
+   * text reads. The caller owns the returned lease and must close it.
+   */
+  async openMedia(
+    id: unknown,
+    pathValue: unknown,
+    expectedVersionValue?: unknown,
+  ): Promise<OpenMediaResult> {
+    if (this.disposing) throw new IdeHostError('FILES_UNAVAILABLE', 'Workspace files are stopping.', 503)
+    const opening = this.openMediaAdmitted(id, pathValue, expectedVersionValue)
+    this.activeMediaOpens.add(opening)
+    try {
+      return await opening
+    } finally {
+      this.activeMediaOpens.delete(opening)
+    }
+  }
+
+  private async openMediaAdmitted(
+    id: unknown,
+    pathValue: unknown,
+    expectedVersionValue?: unknown,
+  ): Promise<OpenMediaResult> {
+    const workspace = this.requireWorkspace(id)
+    const relativePath = parseWorkspacePath(pathValue, { allowRoot: false })
+    const descriptor = mediaPreviewDescriptor(relativePath)
+    if (descriptor === undefined) {
+      throw new IdeHostError('UNSUPPORTED_MEDIA_TYPE', 'This file type is not available in the media preview.', 415)
+    }
+    const expectedVersion = expectedVersionValue === undefined
+      ? undefined
+      : typeof expectedVersionValue === 'string'
+        && Buffer.byteLength(expectedVersionValue, 'utf8') > 0
+        && Buffer.byteLength(expectedVersionValue, 'utf8') <= 256
+        ? expectedVersionValue
+        : (() => { throw new IdeHostError('INVALID_VERSION', 'version must be a non-empty bounded version token.') })()
+
+    const root = await this.resources.resolveRoot(workspace)
+    const target = await resolveWorkspacePath(root, relativePath, { allowMissingFinal: false })
+    const assertMediaMountBoundary = this.internals.assertNoNestedMount ?? assertNoNestedMount
+    await assertMediaMountBoundary(root, target.absolutePath, { includeDescendants: false })
+    const before = await realpath(target.absolutePath)
+    if (!isPathInside(root.realPath, before)) {
+      throw new IdeHostError('PATH_OUTSIDE_WORKSPACE', 'path escapes the workspace.', 403)
+    }
+
+    const handle = await open(target.absolutePath, READ_FLAGS)
+    let leased = false
+    try {
+      const openedBefore = await handle.stat({ bigint: true })
+      if (!openedBefore.isFile()) throw new IdeHostError('NOT_FILE', 'The requested path is not a regular file.')
+      const pathInfo = await lstatDuringVersionedOperation(
+        target.absolutePath,
+        'The file changed while the media preview was being opened.',
+      )
+      const after = await realpath(target.absolutePath)
+      if (!isPathInside(root.realPath, after)) {
+        throw new IdeHostError('PATH_OUTSIDE_WORKSPACE', 'path escaped the workspace during the media open.', 403)
+      }
+      const openedAfter = await handle.stat({ bigint: true })
+      if (pathInfo.isSymbolicLink()
+        || !pathInfo.isFile()
+        || !sameFileSnapshot(openedBefore, openedAfter)
+        || !sameFileSnapshot(openedAfter, pathInfo)) {
+        throw concurrencyConflict('The file changed while the media preview was being opened.')
+      }
+      await assertMediaMountBoundary(root, target.absolutePath, { includeDescendants: false })
+      if (pathInfo.size > BigInt(Number.MAX_SAFE_INTEGER)) {
+        throw new IdeHostError('FILE_SIZE_UNREPRESENTABLE', 'File size exceeds the exact integer range.', 413)
+      }
+      const maxMediaBytes = this.options.maxMediaBytes ?? 512 * 1024 * 1024
+      if (pathInfo.size > BigInt(maxMediaBytes)) {
+        throw new IdeHostError(
+          'MEDIA_TOO_LARGE',
+          `Media exceeds the ${String(maxMediaBytes)} byte preview limit.`,
+          413,
+        )
+      }
+      const version = versionOf(pathInfo)
+      if (expectedVersion !== undefined && expectedVersion !== version) {
+        throw concurrencyConflict('The file changed after the media preview was opened.')
+      }
+
+      this.activeMediaHandles.add(handle)
+      leased = true
+      let closed = false
+      return {
+        descriptor,
+        handle,
+        path: relativePath,
+        sizeBytes: Number(pathInfo.size),
+        version,
+        close: async (): Promise<void> => {
+          if (closed) return
+          closed = true
+          this.activeMediaHandles.delete(handle)
+          await handle.close().catch(() => {})
+        },
+      }
+    } finally {
+      if (!leased) await handle.close().catch(() => {})
+    }
+  }
+
   async write(
     id: unknown,
     pathValue: unknown,
@@ -604,6 +730,9 @@ export class WorkspaceFileService {
   /** Wait for plugin-owned mutations before the capability provider stops. */
   async dispose(): Promise<void> {
     this.disposing = true
+    await Promise.allSettled([...this.activeMediaOpens])
+    await Promise.allSettled([...this.activeMediaHandles].map(async handle => await handle.close()))
+    this.activeMediaHandles.clear()
     if (this.ownsResources) await this.resources.dispose()
     while (this.activeMutations.size > 0) await Promise.allSettled([...this.activeMutations])
   }

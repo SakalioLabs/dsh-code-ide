@@ -54,6 +54,8 @@ IDE 由同源路由 `/dsh-code-ide/` 提供，并嵌入官方会话区域。父�
 - **文件操作**：Windows x64 的本地 NTFS 工作区支持新建文件/目录、拖放移动、重命名和永久删除。通过运行时 `openat2` 探针的 Linux x64 Host，以及通过运行时 `libSystem` 探针的 macOS x64/arm64 本地 APFS 工作区，支持新建文件和目录；移动、重命名和删除仍保持禁用。
 - **编辑器**：CodeMirror 6、多标签、拖拽/键盘排序、最多 4 个编辑器分组、每文档独立撤销/选择/滚动状态、自动换行、缩进、行尾和语言模式。
 - **语法高亮**：内置并按需加载 Plain Text、JavaScript、JSX、TypeScript、TSX、JSON、CSS/SCSS/Less、HTML、Markdown、Python、C、C++、Java、Go、Rust、Shell、PowerShell、YAML、XML 和 SQL。
+- **Markdown 预览**：`.md`、`.markdown`、`.mdx` 可在源码与安全预览间切换；预览直接反映当前未保存的编辑缓冲区。
+- **媒体预览**：只读展示常见图片（PNG、JPEG、GIF、WebP、AVIF）、音频（MP3、WAV、OGG、FLAC）和视频（MP4、WebM、MOV），音视频使用浏览器原生控件和 Range 流式读取，且不会自动播放。
 - **保存与恢复**：版本感知保存、外部变化检测、冲突处理、删除文件重建、脏标签关闭确认，以及浏览器本地的有界 hot-exit 恢复。
 - **查找与替换**：Quick Open、工作区搜索、正则/大小写/全词/include/exclude、结果导航和先预览后应用的替换。替换只修改编辑缓冲区，不会自动保存到磁盘。
 - **命令与快捷键**：命令面板、可编辑的一段或两段快捷键、冲突检测和浏览器本地持久化。
@@ -175,8 +177,8 @@ pnpm dsh plugin --profile web remove dsh-code-ide
 
 1. 在 Harness 中打开或创建一个已关联工作区的会话。
 2. 选择 **IDE** 页签；工作区尚未就绪时会显示明确状态，不会静默切到另一个工作区。
-3. 从资源管理器或 Quick Open 打开文本文件。
-4. 编辑并显式保存；搜索替换产生的修改同样需要保存。
+3. 从资源管理器或 Quick Open 打开文本、Markdown 或受支持的媒体文件；Markdown 可在源码和预览间切换。
+4. 编辑文本并显式保存；预览会反映 Markdown 当前未保存的缓冲区，搜索替换产生的修改同样需要保存。
 5. 需要 Harness 输入框时切回 **对话**。
 
 常用快捷键：
@@ -202,12 +204,14 @@ pnpm dsh plugin --profile web remove dsh-code-ide
       name: dsh-code-ide
       config:
         maxFileBytes: 4194304
+        maxMediaBytes: 536870912
         terminalShell: auto
 ~~~
 
 | 选项 | 默认值 | 说明 |
 |---|---:|---|
 | `maxFileBytes` | 4 MiB | 可读写 UTF-8 文本文件上限 |
+| `maxMediaBytes` | 512 MiB | 单个只读媒体预览上限；可配置，硬上限 8 GiB |
 | `maxDirectoryEntries` | 5,000 | 单次目录列表的直属条目上限 |
 | `terminalShell` | `auto` | Windows 使用 `COMSPEC`，Unix 使用 `SHELL`，并带回退 |
 | `terminalArgs` | shell 默认 | 显式 shell 参数数组 |
@@ -224,8 +228,10 @@ pnpm dsh plugin --profile web remove dsh-code-ide
 - 保存是版本感知流程，但不是跨进程原子 CAS。
 - IDE 终端以运行 Harness 的操作系统用户权限执行，**不是沙箱**。环境变量只做有限敏感名称过滤。
 - hot-exit、快捷键和部分恢复信息会以同源 `localStorage` 明文保存；同源代码可以访问这些数据。
+- Markdown 预览不会执行 raw HTML 或 MDX；外链仅允许 `http:`、`https:` 和 `mailto:`，HTTP(S) 链接使用新页签并隔离 opener、referrer。相对图片只通过同源、工作区受约束的媒体接口加载。
+- 媒体预览严格按后缀白名单提供，只读且受 `maxMediaBytes` 限制；音视频支持单段 HTTP Range 请求以便定位播放，不会自动播放。SVG 不在白名单中，不支持预览。
 - 外部文件变化使用轮询；硬刷新后不会恢复终端进程。
-- 不支持 VS Code 插件、Extension Host、Marketplace、LSP 智能补全、调试器、Git UI、二进制编辑器或多根工作区。
+- 新增预览不包含 VS Code 插件兼容；仍不支持 VS Code 插件、Extension Host、Marketplace、LSP 智能补全、调试器、Git UI、任意二进制编辑或多根工作区。
 - 日文和德文 README 只是文档翻译；当前 UI 语言只有简体中文和英语。
 
 在处理不可信仓库前，请阅读 [`docs/security.md`](docs/security.md) 与 [`docs/compatibility.md`](docs/compatibility.md)。

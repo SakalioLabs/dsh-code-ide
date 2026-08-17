@@ -2,6 +2,7 @@ import type { HostPluginContext } from './contracts.js';
 export interface Config {
     staticRoot?: string;
     maxFileBytes?: number;
+    maxMediaBytes?: number;
     maxRequestBytes?: number;
     maxDirectoryEntries?: number;
     maxInspectTargets?: number;
@@ -35,6 +36,7 @@ export interface ResolvedConfig {
     routePrefix: string;
     staticRoot: string;
     maxFileBytes: number;
+    maxMediaBytes: number;
     maxRequestBytes: number;
     maxDirectoryEntries: number;
     maxInspectTargets: number;

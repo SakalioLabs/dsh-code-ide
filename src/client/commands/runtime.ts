@@ -18,6 +18,7 @@ const emptyContext: WorkbenchCommandContext = {
   activeEditorSaving: false,
   activeEditorDeleted: false,
   activeEditorReadOnly: false,
+  activeTextEditorVisible: false,
   activeEditorEditable: false,
   activeEditorUndoAvailable: false,
   activeEditorRedoAvailable: false,

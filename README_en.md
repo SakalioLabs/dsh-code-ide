@@ -28,6 +28,8 @@ The UI follows familiar VS Code workbench conventions, but it is not Code - OSS 
 - Lazy, bounded Explorer with file icons, retained expansion state, accessible keyboard navigation, and validated workspace-relative paths.
 - Full create, move/rename, and permanent-delete support for local NTFS workspaces on Windows x64. Linux x64 Hosts that pass the runtime `openat2` probe, and local APFS workspaces on macOS x64/arm64 that pass the runtime `libSystem` probe, support file and folder creation only.
 - CodeMirror 6 editing with 20 language modes, tabs, up to four editor groups, top/right splitting, drag/keyboard tab reordering, per-document undo state, line-ending and indentation controls, word wrap, and dirty-close confirmation.
+- Source/safe-preview switching for `.md`, `.markdown`, and `.mdx`; the preview renders the current buffer, including unsaved edits.
+- Read-only previews for common images (PNG, JPEG, GIF, WebP, AVIF), audio (MP3, WAV, OGG, FLAC), and video (MP4, WebM, MOV). Audio and video use native browser controls, byte-range streaming, and never autoplay.
 - Version-aware save/conflict flows, deleted-file recreation, browser-local hot-exit recovery, and polling for external changes.
 - Quick Open, workspace search, regex/case/whole-word/include/exclude filters, result navigation, and preview-first replacement. Replacement changes buffers and does not save automatically.
 - Command Palette and editable one- or two-stroke shortcuts with conflict detection and browser-local persistence.
@@ -126,6 +128,7 @@ The package's `dsh.bundle` patch automatically inserts:
       name: dsh-code-ide
       config:
         maxFileBytes: 4194304
+        maxMediaBytes: 536870912
         terminalShell: auto
 ~~~
 
@@ -134,6 +137,7 @@ Do not also copy `examples/dsh-code-ide.bundle.patch.yml` into a user patch: it 
 | Option | Default | Meaning |
 |---|---:|---|
 | `maxFileBytes` | 4 MiB | Maximum editable UTF-8 file read/write size. |
+| `maxMediaBytes` | 512 MiB | Maximum size of one read-only media preview; configurable up to a hard 8 GiB limit. |
 | `maxDirectoryEntries` | 5,000 | Direct children in one listing. |
 | `terminalShell` | `auto` | Uses `COMSPEC` on Windows or `SHELL` on Unix, with fallbacks. |
 | `terminalArgs` | shell default | Explicit shell argument vector. |
@@ -148,7 +152,7 @@ Other bounded settings are defined in [`src/host/plugin.ts`](src/host/plugin.ts)
 1. Start the `web` profile and open `http://127.0.0.1:3080/`.
 2. Open or create a session attached to a Harness workspace.
 3. Select **IDE** in the conversation view switcher.
-4. Open a text file from Explorer or Quick Open, edit, and save.
+4. Open a text, Markdown, or supported media file from Explorer or Quick Open. Markdown can switch between source and preview; its preview tracks the current unsaved buffer.
 5. Use **Search** for workspace search and replacement preview; save changed buffers separately.
 6. Create a terminal from its toolbar. Commands run as the current local user in the workspace.
 7. Return to Chat whenever the Harness composer or conversation UI is needed.
@@ -176,11 +180,13 @@ Explorer uses Arrow keys, Home/End, Enter, Space, `*`, and printable typeahead. 
 
 - This is an early, source-pinned local tool. Other Harness commits, moving branches, and registry RCs are unsupported until tested.
 - Windows x64 uses strong handle containment on local NTFS workspaces and fully supports creating files and folders, moving/renaming entries, and permanent deletion. Linux x64 supports file and folder creation only after its runtime `openat2` probe succeeds; structural operations remain fail-closed on Linux ARM64 and other architectures until a fixed-signature `openat2` shim is available. macOS x64/arm64 supports file and folder creation only on local APFS workspaces after its runtime `libSystem` probe succeeds. Move, rename, and delete remain disabled on Linux and macOS. Their trusted-local `dirfd` tier protects only against browser-request path traversal, existing or racing symlinks, and mount crossing; it does not resist an active same-UID local process performing rename/reparent operations. Failed probes fail closed, while an indeterminate post-commit result becomes `recoveryRequired` or fails closed. Browsing, editing, saving, search, and terminals remain available. Windows permanent deletion does not use the Recycle Bin, so verify the selected path and recovery state before confirming it.
-- There is no VS Code extension compatibility, extension host, LSP completion, debugger, source-control UI, binary editor, or multi-root support.
+- Preview support does not add VS Code extension compatibility. There is still no extension host, Marketplace compatibility, LSP completion, debugger, source-control UI, arbitrary binary editing, or multi-root support.
 - IDE endpoints require loopback and matching origin. Do not expose this MVP to a LAN or the Internet; it has no remote-user authentication, TLS, process isolation, quotas, or audit log.
 - Workspace validation rejects traversal and observed symlinks but is not an OS sandbox against another same-user process.
 - The terminal has the current user's authority. Sensitive-looking environment names are removed by a denylist, not a secret-proof sandbox; process-tree cleanup is best-effort.
 - Unsaved text and shortcut settings may be stored unencrypted in same-origin `localStorage`. Recovery is bounded and best-effort.
+- Markdown preview never executes raw HTML or MDX. Links allow only `http:`, `https:`, and `mailto:`; HTTP(S) links open in a new tab without opener or referrer authority. Relative images load only through the same-origin, workspace-constrained media endpoint.
+- Media is read-only, extension-allow-listed, and bounded by `maxMediaBytes`. Audio/video accept a single HTTP byte range for seeking and never autoplay. SVG is deliberately unsupported.
 - External changes use polling, not a native watcher. Terminal state is not restored after a hard reload.
 - The UI currently supports English and Simplified Chinese only; translated documentation does not imply Japanese or German UI localization.
 

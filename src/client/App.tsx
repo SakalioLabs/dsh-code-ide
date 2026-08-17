@@ -14,6 +14,7 @@ import {
 } from 'react'
 import type { KnownObservationTarget } from '../shared/workspace-observation.ts'
 import type { MutationProviderResponse } from '../shared/workspace-mutations.ts'
+import { mediaPreviewDescriptor } from '../shared/media-preview.ts'
 import { fileApi, mutationApi } from './api.ts'
 import { CodeEditor, type EditorHistoryPort } from './CodeEditor.tsx'
 import { DocumentConflictDialog } from './DocumentConflictDialog.tsx'
@@ -107,6 +108,10 @@ import {
 } from './TerminalPane.tsx'
 import { QuickInputDialog, type QuickInputOption, type QuickOpenOption } from './QuickOpenDialog.tsx'
 import { ReadOnlyFileView } from './ReadOnlyFileView.tsx'
+import { MarkdownPreview } from './MarkdownPreview.tsx'
+import { MediaPreview } from './MediaPreview.tsx'
+import { mediaPreviewUrl } from './media-preview-url.ts'
+import { PreviewModeRegistry } from './preview/mode-registry.ts'
 import { SearchView, type WorkspaceSearchFileGroup, type WorkspaceSearchMatchView } from './SearchView.tsx'
 import { parseQuickOpenQuery, QuickOpenController, QuickOpenStore } from './search/quick-open.ts'
 import {
@@ -361,6 +366,11 @@ function quickInputPresentation(locale: 'en' | 'zh', mode: QuickInputMode): Quic
   }
 }
 
+function supportsMarkdownPreview(path: string): boolean {
+  const lower = path.toLocaleLowerCase('en-US')
+  return lower.endsWith('.md') || lower.endsWith('.markdown') || lower.endsWith('.mdx')
+}
+
 export function App() {
   const { locale, t } = useIdeI18n()
   const [launchOptions] = useState(() => readAppLaunchOptions(window.location.search))
@@ -382,6 +392,7 @@ export function App() {
     ))
   )))
   const [editorGroups] = useState(() => new EditorGroupsStore())
+  const [previewModes] = useState(() => new PreviewModeRegistry())
   const [editorCloseStore] = useState(() => new EditorCloseStore())
   const [editorCloseController] = useState(() => new EditorCloseController(
     editorCloseStore,
@@ -452,6 +463,12 @@ export function App() {
     editorGroups.getSnapshot,
     editorGroups.getSnapshot,
   )
+  const previewModeSnapshot = useSyncExternalStore(
+    previewModes.subscribe,
+    previewModes.getSnapshot,
+    previewModes.getSnapshot,
+  )
+  void previewModeSnapshot
   const editorCloseSnapshot = useSyncExternalStore(
     editorCloseStore.subscribe,
     editorCloseStore.getSnapshot,
@@ -517,10 +534,36 @@ export function App() {
       ...(activePath === undefined ? {} : { activePath }),
     })
   }, [activePath, documentSnapshot.activeWorkspaceEpoch, editorGroups, tabs, workspaceId])
+  useLayoutEffect(() => {
+    previewModes.synchronize(workspaceId === undefined ? [] : tabs.map(tab => ({
+      workspaceId,
+      workspaceEpoch: documentSnapshot.activeWorkspaceEpoch,
+      path: tab.path,
+      lifecycleId: tab.lifecycleId,
+    })))
+  }, [documentSnapshot.activeWorkspaceEpoch, previewModes, tabs, workspaceId])
+  const activePreviewIdentity: DocumentIdentity | undefined = workspaceId === undefined || activeTab === undefined
+    ? undefined
+    : {
+        workspaceId,
+        workspaceEpoch: documentSnapshot.activeWorkspaceEpoch,
+        path: activeTab.path,
+        lifecycleId: activeTab.lifecycleId,
+      }
+  const activeMarkdownPreview = activeTab !== undefined
+    && activePreviewIdentity !== undefined
+    && supportsMarkdownPreview(activeTab.path)
+    && previewModes.get(activePreviewIdentity) === 'preview'
   const activeEditorMutationLeased = workspaceId !== undefined && activeTab !== undefined
     && documents.isPathMutationLeased(workspaceId, activeTab.path)
   const [workspaceBaselineReady, setWorkspaceBaselineReady] = useState(false)
   const [bootReady, setBootReady] = useState(false)
+  const activeTextEditorVisible = bootReady && activeTab !== undefined
+    && activeTab.readOnlyPresentation === undefined
+    && !activeMarkdownPreview
+  const activeMediaDescriptor = activeTab?.readOnlyPresentation === undefined
+    ? undefined
+    : mediaPreviewDescriptor(activeTab.path)
   const [mutationWriterOwned, setMutationWriterOwned] = useState(false)
   const [mutationWriter, setMutationWriter] = useState(false)
   const mutationWriterRef = useRef(mutationWriter)
@@ -631,12 +674,24 @@ export function App() {
   const activeEditorIndentation = activeEditorHistory?.indentation
   const activeCursorPosition = workspaceId !== undefined && activeTab !== undefined
     && activeTab.readOnlyPresentation === undefined
+    && !activeMarkdownPreview
     && editorCursorReport?.workspaceId === workspaceId
     && editorCursorReport.workspaceEpoch === documentSnapshot.activeWorkspaceEpoch
     && editorCursorReport.path === activeTab.path
     && editorCursorReport.lifecycleId === activeTab.lifecycleId
     ? editorCursorReport
     : undefined
+  const resolveMarkdownImageSrc = useCallback((path: string): string | undefined => {
+    if (workspaceId === undefined || mediaPreviewDescriptor(path)?.kind !== 'image') return undefined
+    return mediaPreviewUrl(workspaceId, path)
+  }, [workspaceId])
+  const openMarkdownPath = useCallback((path: string): void => {
+    if (workspaceId === undefined) return
+    setOpenError(undefined)
+    void navigation.openPath(workspaceId, path).catch(error => {
+      setOpenError(error instanceof Error ? error.message : String(error))
+    })
+  }, [navigation, workspaceId])
   const terminalCommandSnapshot = terminalCommandBinding.current?.port.getSnapshot()
   const terminalCommandState = workspaceId !== undefined
     && terminalCommandSnapshot?.workspaceId === workspaceId
@@ -3734,8 +3789,8 @@ export function App() {
         || activeEditorMutationLeased,
       activeEditorDeleted: activeTab?.externalState === 'deleted',
       activeEditorReadOnly: activeTab?.readOnlyPresentation !== undefined,
-      activeEditorEditable: bootReady && activeTab !== undefined
-        && activeTab.readOnlyPresentation === undefined && !activeEditorMutationLeased,
+      activeTextEditorVisible,
+      activeEditorEditable: activeTextEditorVisible && !activeEditorMutationLeased,
       activeEditorUndoAvailable: activeEditorHistory?.canUndo ?? false,
       activeEditorRedoAvailable: activeEditorHistory?.canRedo ?? false,
       navigateBackAvailable: (activeNavigationHistory?.back ?? 0) > 0,
@@ -3792,6 +3847,7 @@ export function App() {
     activeTab?.pendingReloadId,
     activeTab?.pendingConflictId,
     activeTab?.readOnlyPresentation,
+    activeTextEditorVisible,
     activeEditorHistory?.canUndo,
     activeEditorHistory?.canRedo,
     activeNavigationHistory?.back,
@@ -4114,8 +4170,23 @@ export function App() {
           path: groupActiveTab.path,
           lifecycleId: groupActiveTab.lifecycleId,
         }
+    const groupMarkdownPreviewCapable = groupActiveTab !== undefined
+      && groupActiveTab.readOnlyPresentation === undefined
+      && supportsMarkdownPreview(groupActiveTab.path)
+    const groupPreviewMode = groupIdentity === undefined || !groupMarkdownPreviewCapable
+      ? 'source'
+      : previewModes.get(groupIdentity)
+    const groupMediaDescriptor = groupActiveTab?.readOnlyPresentation === undefined
+      ? undefined
+      : mediaPreviewDescriptor(groupActiveTab.path)
     const activateGroupSurface = (): void => {
       if (groupIdentity !== undefined) activateEditorInGroup(group.id, groupIdentity)
+    }
+    const setGroupPreviewMode = (mode: 'source' | 'preview'): void => {
+      if (groupIdentity === undefined) return
+      activateGroupSurface()
+      previewModes.set(groupIdentity, mode)
+      requestEditorSurfaceFocus()
     }
     const dropTarget = editorGroupDropTarget?.groupId === group.id
       ? editorGroupDropTarget.edge
@@ -4157,6 +4228,22 @@ export function App() {
               setEditorTabFocusRequest(current => current?.requestId === requestId ? undefined : current)
             }}
           />
+          {groupMarkdownPreviewCapable && (
+            <div className={css.markdownViewSwitcher} role="group" aria-label={t('markdownPreview')}>
+              <button
+                type="button"
+                aria-pressed={groupPreviewMode === 'source'}
+                title={t('showMarkdownSource')}
+                onClick={() => { setGroupPreviewMode('source') }}
+              >{t('sourceView')}</button>
+              <button
+                type="button"
+                aria-pressed={groupPreviewMode === 'preview'}
+                title={t('showMarkdownPreview')}
+                onClick={() => { setGroupPreviewMode('preview') }}
+              >{t('previewView')}</button>
+            </div>
+          )}
           {isActiveGroup ? activeEditorSaveArea : null}
         </div>
         <div
@@ -4169,7 +4256,21 @@ export function App() {
             ? { 'aria-label': locale === 'zh' ? '编辑器' : 'Editor' }
             : { 'aria-labelledby': editorTabDomId(panelId, groupActiveIndex) })}
         >
-          {groupActiveTab?.readOnlyPresentation === undefined ? (
+          {groupActiveTab !== undefined && groupActiveTab.readOnlyPresentation === undefined
+            && groupPreviewMode === 'preview' ? (
+            <MarkdownPreview
+              path={groupActiveTab.path}
+              content={groupActiveTab.content}
+              onOpenPath={openMarkdownPath}
+              resolveImageSrc={resolveMarkdownImageSrc}
+              {...(!isActiveGroup || editorFocusRequest === undefined
+                ? {}
+                : { focusRequest: editorFocusRequest })}
+              onFocusApplied={requestId => {
+                setEditorFocusRequest(current => current === requestId ? undefined : current)
+              }}
+            />
+          ) : groupActiveTab !== undefined && groupActiveTab.readOnlyPresentation === undefined ? (
             <CodeEditor
               workspaceId={workspaceId}
               tab={groupActiveTab}
@@ -4225,7 +4326,25 @@ export function App() {
                 documents.updateViewState(changedWorkspace, path, lifecycleId, viewState)
               }}
             />
-          ) : (
+          ) : groupActiveTab !== undefined && workspaceId !== undefined && groupMediaDescriptor !== undefined ? (
+            <MediaPreview
+              workspaceId={workspaceId}
+              path={groupActiveTab.path}
+              version={groupActiveTab.version}
+              descriptor={groupMediaDescriptor}
+              previewLabel={groupMediaDescriptor.kind === 'image'
+                ? t('imagePreview')
+                : groupMediaDescriptor.kind === 'video' ? t('videoPreview') : t('audioPreview')}
+              loadingLabel={t('loadingMediaPreview')}
+              errorLabel={t('mediaPreviewFailed')}
+              {...(!isActiveGroup || editorFocusRequest === undefined
+                ? {}
+                : { focusRequest: editorFocusRequest })}
+              onFocusApplied={requestId => {
+                setEditorFocusRequest(current => current === requestId ? undefined : current)
+              }}
+            />
+          ) : groupActiveTab?.readOnlyPresentation !== undefined ? (
             <ReadOnlyFileView
               path={groupActiveTab.path}
               content={groupActiveTab.content}
@@ -4237,7 +4356,7 @@ export function App() {
                 setEditorFocusRequest(current => current === requestId ? undefined : current)
               }}
             />
-          )}
+          ) : null}
         </div>
         {editorTabDragSession === undefined ? null : (
           <div className={css.editorGroupDropOverlay} aria-hidden="true">
@@ -4488,7 +4607,12 @@ export function App() {
               />
             </div>}
         <div className={css.editorStatusBar} aria-label={t('editorStatus')}>
-          {activeTab !== undefined ? <>
+          {activeMarkdownPreview ? <span>{t('markdownPreview')}</span>
+            : activeMediaDescriptor !== undefined
+              ? <span>{activeMediaDescriptor.kind === 'image'
+                  ? t('imagePreview')
+                  : activeMediaDescriptor.kind === 'video' ? t('videoPreview') : t('audioPreview')}</span>
+              : activeTab !== undefined ? <>
             {activeCursorPosition !== undefined && (
               <button
                 type="button"
@@ -4525,7 +4649,7 @@ export function App() {
                   ? t('spacesSize', { size: activeEditorIndentation.size })
                   : t('tabSize', { size: activeEditorIndentation.size })}</button>
             )}
-          </> : null}
+              </> : null}
         </div>
       </section>
 

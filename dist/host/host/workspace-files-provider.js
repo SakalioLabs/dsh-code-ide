@@ -5,6 +5,7 @@ export function workspaceFilesProvider(ctx, config) {
     const resources = ctx[WORKSPACE_RESOURCES_CAPABILITY];
     const files = new WorkspaceFileService(resources.registry, {
         maxFileBytes: config.maxFileBytes,
+        maxMediaBytes: config.maxMediaBytes,
         maxDirectoryEntries: config.maxDirectoryEntries,
         maxInspectTargets: config.maxInspectTargets,
         maxInspectDirectoryEntries: config.maxInspectDirectoryEntries,

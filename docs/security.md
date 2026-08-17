@@ -14,6 +14,8 @@ This is a DNS-rebinding and cross-site fence, not user authentication. Code alre
 
 Static assets receive a restrictive Content Security Policy, same-origin resource policy, MIME sniffing protection, and `SAMEORIGIN` framing policy. Static path decoding rejects traversal and resolves files beneath the configured static root.
 
+The media route is covered by the same loopback and same-origin gate. It accepts only `GET`/`HEAD`, a registered workspace identifier, a validated relative path, and at most one HTTP byte range. Responses are `no-store`, `nosniff`, same-origin resources with an allow-listed MIME type; malformed or unsatisfiable ranges fail without serving bytes.
+
 ## Workspace containment
 
 The Host never accepts a browser-supplied absolute filesystem path. It resolves an opaque `workspaceId` through the Harness workspace registry and then enforces:
@@ -41,6 +43,10 @@ The provider loads only the backend matching the Host platform. An unsupported f
 ## Reads and saves
 
 File reads are bounded and UTF-8 validated. Binary or oversized content is presented read-only. Saves are serialized per workspace and require an `expectedVersion` for an existing file. The Host revalidates the root, parent, target, and version before publishing a unique `wx` staging file, then verifies the committed file's identity and bytes.
+
+Markdown preview renders `.md`, `.markdown`, and `.mdx` from the current browser buffer rather than rereading disk. It does not execute raw HTML or MDX and does not use an HTML injection sink. Link schemes are restricted to `http:`, `https:`, and `mailto:`; HTTP(S) links open with opener and referrer isolation. Relative images are normalized within the workspace and can load only through the controlled same-origin media route. External images, escaping relative paths, unsupported formats, and SVG are rejected.
+
+Media delivery is read-only and extension-allow-listed. Common raster images, audio, and video are supported; SVG is excluded because it can carry active content. The Host repeats workspace identity, containment, symlink/reparse-point, regular-file, size, and version checks before opening a media handle. `maxMediaBytes` defaults to 512 MiB and cannot exceed 8 GiB. Audio and video may request one byte range for seeking, use native browser controls, and never autoplay.
 
 The save strategy preserves POSIX permission bits when replacing an existing file. It does not promise to preserve ACLs, extended attributes, alternate data streams, or other filesystem metadata.
 
@@ -75,6 +81,7 @@ The embedded frame is same-origin and receives only an allow-list of Harness the
 - Register only workspaces the local user intends to expose to the IDE.
 - Review `terminalShell` and `terminalArgs`; they are executable configuration.
 - Keep file, request, search, terminal, and mutation limits bounded.
+- Keep `maxMediaBytes` at the smallest value needed; its default is 512 MiB and its hard maximum is 8 GiB.
 - Back up important repositories and use version control; permanent deletion is permanent.
 - Restart Harness after changing plugin binaries or configuration.
 

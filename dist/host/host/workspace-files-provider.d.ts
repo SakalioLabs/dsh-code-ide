@@ -1,6 +1,7 @@
 import { type WorkspaceFilesProviderContext } from './capabilities.js';
 export interface WorkspaceFilesProviderConfig {
     maxFileBytes: number;
+    maxMediaBytes: number;
     maxDirectoryEntries: number;
     maxInspectTargets: number;
     maxInspectDirectoryEntries: number;
