@@ -29,6 +29,7 @@ jobs:
       - run: pnpm test
       - run: pnpm build
       - name: Verify committed distribution
+        if: runner.os == 'Linux'
         shell: bash
         run: |
           set -euo pipefail
