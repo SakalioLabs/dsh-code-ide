@@ -15,6 +15,7 @@ import {
   WorkspaceSearchService,
   parseNulPathRecords,
   utf8ByteOffsetToUtf16,
+  type WorkspaceSearchInternals,
   type WorkspaceSearchOptions,
 } from '../../src/host/search.js'
 
@@ -179,10 +180,14 @@ describe('WorkspaceSearchService', () => {
     await rm(root, { recursive: true, force: true, maxRetries: 3 })
   })
 
-  function service(runtime: HostSubprocessRuntime, overrides: Partial<WorkspaceSearchOptions> = {}): WorkspaceSearchService {
+  function service(
+    runtime: HostSubprocessRuntime,
+    overrides: Partial<WorkspaceSearchOptions> = {},
+    internals: WorkspaceSearchInternals = {},
+  ): WorkspaceSearchService {
     return new WorkspaceSearchService({
       list: () => [{ id: WORKSPACE_ID, path: root, title: 'Fixture' }],
-    }, runtime, options(overrides))
+    }, runtime, options(overrides), internals)
   }
 
   it('uses canonical cwd and pure bounded argv while preserving UTF-16 ranges', async () => {
@@ -513,7 +518,12 @@ describe('WorkspaceSearchService', () => {
       return { ...handle, done: done.promise }
     }
 
-    await expectCode(service(runtime, { timeoutMs: 5 }).findFiles(WORKSPACE_ID, 'file'), 'SEARCH_TIMEOUT')
+    await expectCode(service(runtime, { timeoutMs: 5 }, {
+      // Keep the deadline focused on the scripted process tree. A real dynamic
+      // package import can legitimately take longer than 5 ms under suite load
+      // and abort before the test has created a process to settle.
+      resolveRipgrepPath: async () => 'rg',
+    }).findFiles(WORKSPACE_ID, 'file'), 'SEARCH_TIMEOUT')
     expect(waitForExit).toHaveBeenCalledOnce()
   })
 

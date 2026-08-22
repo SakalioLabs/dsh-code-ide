@@ -9,7 +9,7 @@
 `dsh-code-ide` ergänzt [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) um eine optionale IDE-Arbeitsoberfläche. Startseite, Chat, Sitzungen, Einstellungen und Werkzeugoberflächen von Harness bleiben unverändert erhalten.
 
 > [!IMPORTANT]
-> `v0.1.0-alpha.0` ist ein GitHub-**Prerelease** mit einem vorgebauten Plugin-Paket; es wird nicht auf npm veröffentlicht. Kompatibilitätsbasis bleibt der DeepSeek-Harness-Quellstand `47f9438` (Manifestlinie `0.1.0-rc.5`).
+> `v0.1.0-alpha.0` ist ein GitHub-**Prerelease** mit einem vorgebauten Plugin-Paket; es wird nicht auf npm veröffentlicht. Der aktuelle Branch `main` wurde gegen DeepSeek Harness `0.1.1-rc.2` (Tag `dsh-v0.1.1-rc.2`, Quell-Commit `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`) auf Kompatibilität geprüft. Andere Commits und künftige npm-RCs liegen außerhalb dieses Kompatibilitätsversprechens.
 
 > Den abgesicherten, chinesischsprachigen Assistenten-Prompt für die Installation findest du unter [Schnellinstallation](README.md#快速安装推荐). Die folgenden Schritte bleiben der nachvollziehbare manuelle Rückweg.
 
@@ -42,12 +42,12 @@ Die Bedienstruktur orientiert sich an bekannten VS-Code-Konventionen. Das Projek
 
 - Node.js `^22.19.0` oder `>=24.0.0`.
 - Corepack und pnpm. Dieses Repository fixiert pnpm `10.17.0`; der unterstützte Harness-Checkout derzeit `11.7.0`.
-- DeepSeek-Harness-Commit `47f9438`.
+- DeepSeek Harness `0.1.1-rc.2` (Tag `dsh-v0.1.1-rc.2`, Quell-Commit `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`).
 - Moderner gleichursprünglicher Browser mit WebSocket, `localStorage` und Web Locks. Ohne Web Locks werden Wiederherstellungsbesitz und Kürzelbearbeitung deaktiviert oder schreibgeschützt.
 - Das Plattformprogramm aus `@vscode/ripgrep@1.18.0`.
-- Exakt `node-pty@1.1.0` als Peer aus dem unterstützten Harness-Host-Graphen. Eine fehlende oder andere Version ist ein Kompatibilitätsfehler; keine zweite native Kopie installieren.
+- Das vom geprüften Harness-Host-Graphen bereitgestellte Peer `node-pty@1.2.0-beta.15`. Keine zweite native Kopie installieren.
 
-Auf npm ist derzeit `@deepseek-ai/dsh@0.1.0-rc.6` veröffentlicht. Dieses Alpha wurde dagegen noch nicht Ende-zu-Ende verifiziert und ist daher keine zugesicherte Installationsbasis dieses Projekts.
+Auf npm ist derzeit `@deepseek-ai/dsh@0.1.1-rc.2` veröffentlicht. Der aktuelle Branch `main` wurde gegen diese Veröffentlichung, ihren Tag und ihren Quell-Commit auf Kompatibilität geprüft. Für eine reproduzierbare Umgebung den untenstehenden Tag oder Commit fixieren.
 
 ## Installation über GitHub (empfohlen)
 
@@ -58,7 +58,7 @@ Harness vorbereiten:
 ~~~sh
 git clone https://github.com/deepseek-ai/deepseek-harness.git
 cd deepseek-harness
-git checkout 47f9438
+git checkout dsh-v0.1.1-rc.2 # b150a551b8d465e31e418e1b2eaf5e79bbb7d28e
 corepack pnpm install --frozen-lockfile
 corepack pnpm build
 ~~~
@@ -101,7 +101,7 @@ if ($actual -ne $expected) { throw "SHA-256 mismatch" }
 corepack pnpm install --frozen-lockfile
 corepack pnpm build
 
-# In deepseek-harness@47f9438
+# In deepseek-harness@dsh-v0.1.1-rc.2
 corepack pnpm dsh plugin --profile web add /absolute/path/to/dsh-code-ide
 corepack pnpm dsh plugin --profile web list
 corepack pnpm dsh --profile web --dump-config

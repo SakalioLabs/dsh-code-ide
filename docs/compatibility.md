@@ -2,7 +2,7 @@
 
 ## Supported Harness baseline
 
-This alpha targets DeepSeek Harness source commit `47f9438`. The package relies on the conversation slot and Cordis bundle contracts present at that revision. Other Harness commits may work, but they are not a compatibility promise until verified and documented.
+The current `main` branch has been compatibility-validated against DeepSeek Harness `0.1.1-rc.2`, tag `dsh-v0.1.1-rc.2`, source commit `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`. The package relies on the conversation slot and Cordis bundle contracts present at that revision. Other Harness commits may work, but they are not a compatibility promise until verified and documented.
 
 Runtime requirements:
 
@@ -10,6 +10,7 @@ Runtime requirements:
 | --- | --- |
 | Node.js | `^22.19.0` or `>=24.0.0` |
 | pnpm | `10.17.0` recommended; the repository pins this version |
+| DeepSeek Harness | `0.1.1-rc.2` (`dsh-v0.1.1-rc.2`, `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`) |
 | Harness profile | Web profile with a registered local workspace |
 | Browser origin | The same loopback origin that serves Harness |
 

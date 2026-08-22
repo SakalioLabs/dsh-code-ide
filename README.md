@@ -9,7 +9,7 @@
 `dsh-code-ide` 以可选插件的方式，为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 增加一个浏览器 IDE 工作台。它不会替换 Harness 首页、对话、会话、设置或工具界面。
 
 > [!IMPORTANT]
-> `v0.1.0-alpha.0` 是 GitHub **预发布版**，提供预构建插件包，但不发布到 npm。兼容基线仍是 DeepSeek Harness 源码提交 `47f943859bef60e4160492346772ded9b24f765a`；其他提交或 npm RC 尚不属于兼容承诺。
+> `v0.1.0-alpha.0` 是 GitHub **预发布版**，提供预构建插件包，但不发布到 npm。当前 `main` 已按 DeepSeek Harness `0.1.1-rc.2`（标签 `dsh-v0.1.1-rc.2`，源码提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`）完成兼容性验证；其他提交或未来 npm RC 尚不属于兼容承诺。
 
 ## 快速安装（推荐）
 
@@ -66,14 +66,14 @@ IDE 由同源路由 `/dsh-code-ide/` 提供，并嵌入官方会话区域。父�
 
 | 项目 | 要求 |
 |---|---|
-| DeepSeek Harness | 源码提交 `47f943859bef60e4160492346772ded9b24f765a` |
+| DeepSeek Harness | `0.1.1-rc.2`（标签 `dsh-v0.1.1-rc.2`；源码提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`） |
 | Node.js | `^22.19.0` 或 `>=24.0.0` |
 | pnpm | 本仓库固定 `10.17.0`；Harness 固定 `11.7.0` |
 | 浏览器 | 现代同源浏览器，支持 WebSocket、`localStorage`、Web Locks |
 | 搜索 | `@vscode/ripgrep@1.18.0` 对应平台二进制 |
-| 终端 | 必须复用 Harness 提供的精确 peer `node-pty@1.1.0` |
+| 终端 | 复用目标 Harness Host 图中提供的 `node-pty@1.2.0-beta.15`，不要手动安装第二份原生副本 |
 
-npm 当前提供 `@deepseek-ai/dsh@0.1.0-rc.6`，但本 alpha 尚未完成对该发布版的端到端兼容验证；因此它不是本项目承诺的安装基线。不要另外编译第二份 `node-pty`。
+npm 当前提供 `@deepseek-ai/dsh@0.1.1-rc.2`；当前 `main` 已针对该发布版及其对应标签和提交完成兼容性验证。需要可复现环境时，固定到下方的标签或提交；不要另外编译第二份 `node-pty`。
 
 ## 手动安装（可审计的后备方案）
 
@@ -84,7 +84,7 @@ npm 当前提供 `@deepseek-ai/dsh@0.1.0-rc.6`，但本 alpha 尚未完成对该
 ~~~sh
 git clone https://github.com/deepseek-ai/deepseek-harness.git
 cd deepseek-harness
-git checkout 47f943859bef60e4160492346772ded9b24f765a
+git checkout dsh-v0.1.1-rc.2 # b150a551b8d465e31e418e1b2eaf5e79bbb7d28e
 pnpm install --frozen-lockfile
 pnpm build
 ~~~

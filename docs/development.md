@@ -46,14 +46,14 @@ examples/           # reference bundle patch; installation applies the real patc
 
 The committed `dist/` tree is the Git-install surface. After changing source code, run `pnpm build` and include the refreshed output in the same change. CI rebuilds these targets and verifies that committed `dist/` is synchronized before accepting the change.
 
-## Test against the pinned Harness
+## Test against the validated Harness
 
-Prepare the supported Harness checkout:
+Prepare the validated Harness checkout (`0.1.1-rc.2`, tag `dsh-v0.1.1-rc.2`, commit `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`):
 
 ~~~bash
 git clone https://github.com/deepseek-ai/deepseek-harness.git
 cd deepseek-harness
-git checkout 47f9438
+git checkout dsh-v0.1.1-rc.2 # b150a551b8d465e31e418e1b2eaf5e79bbb7d28e
 pnpm install --frozen-lockfile
 pnpm build
 ~~~

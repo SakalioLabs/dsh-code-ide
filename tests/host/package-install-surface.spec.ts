@@ -14,6 +14,18 @@ describe('Git install surface', () => {
     expect(lifecycleScripts.filter(name => Object.hasOwn(manifest.scripts ?? {}, name))).toEqual([])
   })
 
+  it('reuses the Harness-owned Cordis and PTY peers without adding duplicate native dependencies', async () => {
+    const manifest = JSON.parse(await readFile(resolve(repositoryRoot, 'package.json'), 'utf8')) as {
+      peerDependencies?: Record<string, string>
+      peerDependenciesMeta?: Record<string, { optional?: boolean }>
+    }
+
+    expect(manifest.peerDependencies?.['@deepseek-ai/cordis']).toBe('>=4.0.1-rc.1 <5')
+    expect(manifest.peerDependencies?.['node-pty']).toBe('1.1.0 || 1.2.0-beta.15')
+    expect(manifest.peerDependenciesMeta?.['@deepseek-ai/cordis']?.optional).toBe(true)
+    expect(manifest.peerDependenciesMeta?.['node-pty']?.optional).toBe(true)
+  })
+
   it('ships every entry point required by a source-based Harness install', async () => {
     await Promise.all([
       'dist/host/index.js',

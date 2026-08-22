@@ -9,7 +9,7 @@
 `dsh-code-ide` は、[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) に任意で利用できる IDE ワークベンチを追加するプラグインです。公式のホーム、チャット、セッション、設定、ツール UI は置き換えません。
 
 > [!IMPORTANT]
-> `v0.1.0-alpha.0` は、ビルド済みプラグインを提供する GitHub **プレリリース**です。npm には公開していません。互換性の基準は引き続き DeepSeek Harness のソースコミット `47f9438`（マニフェスト上は `0.1.0-rc.5`）です。
+> `v0.1.0-alpha.0` は、ビルド済みプラグインを提供する GitHub **プレリリース**です。npm には公開していません。現在の `main` は DeepSeek Harness `0.1.1-rc.2`（タグ `dsh-v0.1.1-rc.2`、ソースコミット `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`）に対して互換性検証済みです。その他のコミットや将来の npm RC はこの互換性保証の対象外です。
 
 > 安全確認付きの中国語インストール支援プロンプトは、[クイックインストール](README.md#快速安装推荐) を参照してください。以下の手順は検証可能な手動フォールバックです。
 
@@ -42,12 +42,12 @@
 
 - Node.js `^22.19.0` または `>=24.0.0`。
 - Corepack と pnpm。本リポジトリは pnpm `10.17.0`、対象 Harness は現在 `11.7.0` を固定。
-- DeepSeek Harness ソースコミット `47f9438`。
+- DeepSeek Harness `0.1.1-rc.2`（タグ `dsh-v0.1.1-rc.2`、ソースコミット `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`）。
 - WebSocket、`localStorage`、Web Locks を利用できる同一オリジンの最新ブラウザー。Web Locks がない場合、復元の書き込み所有権やショートカット編集は無効または読み取り専用になります。
 - `@vscode/ripgrep@1.18.0` が提供する対象 OS 用バイナリ。
-- Harness Host 側から提供される厳密な `node-pty@1.1.0` peer。欠落や別バージョンは互換性エラーです。別コピーを追加ビルドしないでください。
+- 検証済み Harness Host の依存グラフから提供される `node-pty@1.2.0-beta.15` peer。別コピーを追加ビルドしないでください。
 
-npm では現在 `@deepseek-ai/dsh@0.1.0-rc.6` が公開されていますが、本 alpha はこのリリースでエンドツーエンド検証されていません。したがって、本プロジェクトが保証するインストール基準ではありません。
+npm では現在 `@deepseek-ai/dsh@0.1.1-rc.2` が公開されており、現在の `main` はこのリリース、タグ、ソースコミットに対して互換性検証済みです。再現可能な環境が必要な場合は、下記のタグまたはコミットに固定してください。
 
 ## GitHub からインストール（推奨）
 
@@ -58,7 +58,7 @@ Harness を準備します。
 ~~~sh
 git clone https://github.com/deepseek-ai/deepseek-harness.git
 cd deepseek-harness
-git checkout 47f9438
+git checkout dsh-v0.1.1-rc.2 # b150a551b8d465e31e418e1b2eaf5e79bbb7d28e
 corepack pnpm install --frozen-lockfile
 corepack pnpm build
 ~~~
@@ -101,7 +101,7 @@ if ($actual -ne $expected) { throw "SHA-256 mismatch" }
 corepack pnpm install --frozen-lockfile
 corepack pnpm build
 
-# deepseek-harness@47f9438 側
+# deepseek-harness@dsh-v0.1.1-rc.2 側
 corepack pnpm dsh plugin --profile web add /absolute/path/to/dsh-code-ide
 corepack pnpm dsh plugin --profile web list
 corepack pnpm dsh --profile web --dump-config

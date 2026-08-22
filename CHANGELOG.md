@@ -15,6 +15,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- Validated the plugin against DeepSeek Harness `0.1.1-rc.2` (tag `dsh-v0.1.1-rc.2`, source commit `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`), updated the host-provided `node-pty` peer to `1.2.0-beta.15`, and refreshed the compatibility and installation guidance.
 - Committed the prebuilt `dist/` output and removed install-time plugin builds so `github:SakalioLabs/dsh-code-ide` installs without a pnpm `allowBuilds` entry.
 - Clarified platform capabilities and trust tiers: Windows x64 with local NTFS uses strong handle containment and retains full create, move/rename, and permanent-delete support. Linux x64 and macOS use a trusted-local `dirfd` tier for creation only; it rejects browser-request traversal, existing or racing symlinks, and mount crossing, but does not resist active same-UID rename/reparent races. Linux ARM64 and other architectures remain fail-closed until a fixed-signature `openat2` shim is shipped. Linux/macOS move, rename, and delete operations remain disabled. Failed runtime probes fail closed, and indeterminate post-commit results become `recoveryRequired` or fail closed, without affecting browsing, editing, saving, search, or terminals.
 - Documented media as read-only and non-autoplaying, with a 512 MiB default `maxMediaBytes` limit (8 GiB hard maximum), no SVG support, and no change to the absence of VS Code extension compatibility.
